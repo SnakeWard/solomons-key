@@ -7,7 +7,7 @@ A structural verifier for Solomon's Key KEY files.
 `sk-lint` is the first thing in Solomon's Key that meets that bar. It reads a KEY file and decides pass/fail by program. No model is in the loop. Twenty-two rules, each with a committed red-corpus fixture proving it discriminates.
 
 <!-- counts:begin -->
-**23** lint rules · **19** run rules · **13** semantic rules · **136** tests passing
+**23** lint rules · **19** run rules · **13** semantic rules · **137** tests passing
 <!-- counts:end -->
 
 ## Why a verifier and not a runtime

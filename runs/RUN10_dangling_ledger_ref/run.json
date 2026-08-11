@@ -10,7 +10,7 @@
   "actor": "Codex",
   "started_at": "2026-02-03T14:20:00Z",
   "completed_at": "2026-02-03T14:24:00Z",
-  "ledger_file": "ledger\\solomons-key-builder-ledger.jsonl",
+  "ledger_file": "ledger/solomons-key-builder-ledger.jsonl",
   "ledger_entry_hashes": [
     "983e12fd1c636e766a706d0929cf26b2711bd00c4336b87429b414bf109fc257"
   ],

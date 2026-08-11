@@ -22,6 +22,7 @@ import sys
 import yaml
 
 import sk_artifacts as A
+import gen_runs as G
 import sk_verify as V
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -63,6 +64,21 @@ def main() -> int:
     ledger = (
         [json.loads(l) for l in open(LEDGER, encoding="utf-8") if l.strip()]
         if os.path.exists(LEDGER) else None
+    )
+
+    # Generated JSON is a cross-platform interchange format. Host-native
+    # separators must not make the committed corpus differ from Linux CI.
+    portable, _ = G.build_good(
+        key_doc,
+        KEY,
+        r"ledger\solomons-key-builder-ledger.jsonl",
+        ledger[-1]["entry_hash"],
+    )
+    check(
+        "generated_manifest_paths_are_portable",
+        "\\" not in portable["key_file"]
+        and portable["ledger_file"] == "ledger/solomons-key-builder-ledger.jsonl",
+        f"key={portable['key_file']!r}, ledger={portable['ledger_file']!r}",
     )
 
     # --- 1. the conforming run conforms ------------------------------
