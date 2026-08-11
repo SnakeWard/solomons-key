@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solomons-key.dev/schemas/artifacts/v1/repair_report_artifact.schema.json",
+  "title": "Repair Report Artifact",
+  "description": "Proof of authorized repair action.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "type": "object",
+  "properties": {
+    "artifact_id": {
+      "const": "repair_report_artifact"
+    },
+    "required_gate": {
+      "const": "repair_authorization_gate"
+    },
+    "body": {
+      "type": "object",
+      "title": "Proof of authorized repair action",
+      "required": [
+        "authorized_by",
+        "scope",
+        "files_changed",
+        "result"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "authorized_by": {
+          "enum": [
+            "Codex",
+            "Grok",
+            "Claude",
+            "user"
+          ]
+        },
+        "scope": {
+          "enum": [
+            "generated_workspace_only",
+            "approved_generated_files_only",
+            "repair_generated_files_only"
+          ],
+          "description": "Repair may never touch the protected source zone."
+        },
+        "files_changed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "sha256_before",
+              "sha256_after"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256_before": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  {
+                    "const": "absent"
+                  }
+                ]
+              },
+              "sha256_after": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "protected_source_touched": {
+          "const": false,
+          "description": "Terminal block if ever true. May only be false."
+        },
+        "result": {
+          "enum": [
+            "pass",
+            "fail",
+            "repair_required",
+            "refused",
+            "escalated",
+            "blocked",
+            "not_checked"
+          ]
+        },
+        "rollback_notes": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "artifact_id"
+  ]
+}

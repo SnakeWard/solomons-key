@@ -1,0 +1,4 @@
+# Runtime dependencies. Deliberately minimal — a verifier with a large
+# dependency surface is a verifier with a large attack surface.
+PyYAML>=6.0
+jsonschema>=4.18

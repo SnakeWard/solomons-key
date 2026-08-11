@@ -1,0 +1,49 @@
+{
+  "artifact_id": "telemetry_trace_artifact",
+  "artifact_status": "validated",
+  "schema_version": "1.0.0",
+  "run_id": "RUN_demo_0001",
+  "pass_id": "PASS_18",
+  "timestamp": "2026-01-15T09:30:00Z",
+  "produced_by_role": "telemetry_recording_role",
+  "produced_by_actor": "Codex",
+  "ledger_ref": "68b880d6f1d10775761c573908a0df0a8787a483a828841c7bb3979aaa702959",
+  "telemetry_refs": [
+    "evt_0001"
+  ],
+  "claims_final_authority": false,
+  "body": {
+    "route_id": "protocol_build_route",
+    "events": [
+      {
+        "event_id": "evt_0000",
+        "event_type": "task_frame_received",
+        "event_sequence_index": 0
+      },
+      {
+        "event_id": "evt_0001",
+        "event_type": "task_frame_validated",
+        "event_sequence_index": 1
+      },
+      {
+        "event_id": "evt_0002",
+        "event_type": "lot_route_selected",
+        "event_sequence_index": 3
+      },
+      {
+        "event_id": "evt_0003",
+        "event_type": "gate_decision_recorded",
+        "event_sequence_index": 3,
+        "ledger_ref": "68b880d6f1d10775761c573908a0df0a8787a483a828841c7bb3979aaa702959"
+      }
+    ],
+    "sequence_policy": "ordered_append_only"
+  },
+  "evidence_source": "program",
+  "produced_by_program": {
+    "name": "sk_emit.telemetry",
+    "sha256": "57135ccf62d3b582c3a7e571c48fc79aa0d86b27e8e62c8d34f778863e0b3667"
+  },
+  "route_id": "protocol_build_route",
+  "required_gate": "telemetry_requirement_gate"
+}

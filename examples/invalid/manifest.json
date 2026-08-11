@@ -1,0 +1,142 @@
+{
+  "cases": [
+    {
+      "fixture": "missing_ledger_ref.json",
+      "base_artifact": "gate_decision_artifact",
+      "expected_rule": "json_schema",
+      "violation": "Envelope drops ledger_ref \u2014 evidence with no witness"
+    },
+    {
+      "fixture": "unbounded_actor.json",
+      "base_artifact": "gate_decision_artifact",
+      "expected_rule": "json_schema",
+      "violation": "produced_by_actor outside the declared bounded set"
+    },
+    {
+      "fixture": "claims_final_authority.json",
+      "base_artifact": "role_output_artifact",
+      "expected_rule": "json_schema",
+      "violation": "Envelope asserts final authority; the field may only be false"
+    },
+    {
+      "fixture": "gate_decision_no_evidence.json",
+      "base_artifact": "gate_decision_artifact",
+      "expected_rule": "json_schema",
+      "violation": "A gate decision with an empty evidence list is an assertion"
+    },
+    {
+      "fixture": "skeleton_claims_final.json",
+      "base_artifact": "skeleton_example_artifact",
+      "expected_rule": "json_schema",
+      "violation": "A skeleton marked final \u2014 no fake completion"
+    },
+    {
+      "fixture": "unknown_body_field.json",
+      "base_artifact": "schema_artifact",
+      "expected_rule": "json_schema",
+      "violation": "Body carries an undeclared field; property sets are closed"
+    },
+    {
+      "fixture": "bad_status_value.json",
+      "base_artifact": "schema_artifact",
+      "expected_rule": "json_schema",
+      "violation": "artifact_status outside the registry's declared values"
+    },
+    {
+      "fixture": "malformed_sha256.json",
+      "base_artifact": "source_inventory_artifact",
+      "expected_rule": "json_schema",
+      "violation": "A hash that is not 64 hex characters"
+    },
+    {
+      "fixture": "SEM01_telemetry_gap.json",
+      "base_artifact": "telemetry_trace_artifact",
+      "expected_rule": "SEM01",
+      "violation": "Sequence indices jump 0,1,3 \u2014 an ordered trace with a hole"
+    },
+    {
+      "fixture": "SEM02_attested_without_attestation.json",
+      "base_artifact": "gate_decision_artifact",
+      "expected_rule": "SEM02",
+      "violation": "Gate declared attested but no attester recorded"
+    },
+    {
+      "fixture": "SEM11_automatic_gate_asserted.json",
+      "base_artifact": "gate_decision_artifact",
+      "expected_rule": "SEM11",
+      "violation": "An automatic gate decided by assertion instead of by a program"
+    },
+    {
+      "fixture": "SEM13_argv_records_output_path.json",
+      "base_artifact": "schema_artifact",
+      "expected_rule": "SEM13",
+      "violation": "Recorded argv includes --out, so identical measurements hash differently"
+    },
+    {
+      "fixture": "SEM12_program_without_program.json",
+      "base_artifact": "schema_artifact",
+      "expected_rule": "SEM12",
+      "violation": "Claims to be program-produced but names no program"
+    },
+    {
+      "fixture": "SEM02_automatic_with_attestation.json",
+      "base_artifact": "gate_decision_artifact",
+      "expected_rule": "SEM02",
+      "violation": "An automatic gate settled by an actor's say-so"
+    },
+    {
+      "fixture": "SEM03_enforcement_class_mismatch.json",
+      "base_artifact": "gate_decision_artifact",
+      "expected_rule": "SEM03",
+      "violation": "Artifact downgrades an automatic gate to attested"
+    },
+    {
+      "fixture": "SEM04_undefined_failure.json",
+      "base_artifact": "audit_report_artifact",
+      "expected_rule": "SEM04",
+      "violation": "Cites a failure_id not present in the taxonomy"
+    },
+    {
+      "fixture": "SEM05_role_not_on_route.json",
+      "base_artifact": "role_output_artifact",
+      "expected_rule": "SEM05",
+      "violation": "Role produced evidence on a route that does not select it"
+    },
+    {
+      "fixture": "SEM07_dangling_ledger_ref.json",
+      "base_artifact": "schema_artifact",
+      "expected_rule": "SEM07",
+      "violation": "ledger_ref resolves to no entry in the chain"
+    },
+    {
+      "fixture": "SEM08_unjustified_skip.json",
+      "base_artifact": "validation_report_artifact",
+      "expected_rule": "SEM08",
+      "violation": "Validation layers skipped with no justification"
+    },
+    {
+      "fixture": "SEM08_undeclared_layer.json",
+      "base_artifact": "validation_report_artifact",
+      "expected_rule": "SEM08",
+      "violation": "Runs a validation layer the KEY never declared"
+    },
+    {
+      "fixture": "SEM09_protected_source_touched.json",
+      "base_artifact": "repair_report_artifact",
+      "expected_rule": "json_schema",
+      "violation": "Repair reports touching protected source \u2014 terminal block"
+    },
+    {
+      "fixture": "SEM10_lock_contradicts_itself.json",
+      "base_artifact": "source_boundary_lock_artifact",
+      "expected_rule": "SEM10",
+      "violation": "Claims unmodified while the inventory hashes differ"
+    },
+    {
+      "fixture": "SEM10_lock_lists_modified.json",
+      "base_artifact": "source_boundary_lock_artifact",
+      "expected_rule": "SEM10",
+      "violation": "Claims unmodified while listing modified paths"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "artifact_id": "skeleton_example_artifact",
+  "artifact_status": "validated",
+  "schema_version": "1.0.0",
+  "run_id": "RUN_demo_0001",
+  "pass_id": "PASS_18",
+  "timestamp": "2026-01-15T09:30:00Z",
+  "produced_by_role": "artifact_production_role",
+  "produced_by_actor": "Codex",
+  "ledger_ref": "68b880d6f1d10775761c573908a0df0a8787a483a828841c7bb3979aaa702959",
+  "telemetry_refs": [
+    "evt_0001"
+  ],
+  "claims_final_authority": false,
+  "body": {
+    "example_path": "examples/skeleton/gates.partial.json",
+    "example_sha256": "d2bbb0769c2f0f4d7a60b0679b47c478a606c1a1b04b223673a3153a8f9b6849",
+    "is_final": false,
+    "covers_section": "gates"
+  },
+  "evidence_source": "program",
+  "produced_by_program": {
+    "name": "sk_emit.skeleton",
+    "sha256": "2a867cdee2160eb908a18fc65ea1a4fba68482038dbcf4fa392e50fee3b2bd53"
+  },
+  "route_id": "protocol_build_route",
+  "required_gate": "schema_validation_gate"
+}

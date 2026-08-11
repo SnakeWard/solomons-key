@@ -1,0 +1,30 @@
+{
+  "artifact_id": "ledger_entry_artifact",
+  "artifact_status": "validated",
+  "schema_version": "1.0.0",
+  "run_id": "RUN_build_0001",
+  "pass_id": "PASS_18",
+  "timestamp": "2026-02-03T14:20:00Z",
+  "produced_by_role": "ledger_request_role",
+  "produced_by_actor": "Codex",
+  "route_id": "protocol_build_route",
+  "required_gate": "ledger_requirement_gate",
+  "ledger_ref": "68b880d6f1d10775761c573908a0df0a8787a483a828841c7bb3979aaa702959",
+  "telemetry_refs": [
+    "evt_0001"
+  ],
+  "claims_final_authority": false,
+  "body": {
+    "entry_hash": "68b880d6f1d10775761c573908a0df0a8787a483a828841c7bb3979aaa702959",
+    "prev_hash": "6da0633528deaa0144e7b058315f0b753ec0b945163a72bf96a0d18180f9de0d",
+    "seq": 19,
+    "entry_type": "validation_run",
+    "chain_verified": true,
+    "anchor_head": "68b880d6f1d10775761c573908a0df0a8787a483a828841c7bb3979aaa702959"
+  },
+  "evidence_source": "program",
+  "produced_by_program": {
+    "name": "sk_ledger.append",
+    "sha256": "5d3c1edfa9201d2f47d17fa66486b5d74abd8ae910751fccd6d0fbff636d911c"
+  }
+}

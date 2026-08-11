@@ -1,0 +1,26 @@
+{
+  "artifact_id": "role_output_artifact",
+  "artifact_status": "validated",
+  "schema_version": "1.0.0",
+  "run_id": "RUN_build_0001",
+  "pass_id": "PASS_18",
+  "timestamp": "2026-02-03T14:20:00Z",
+  "produced_by_role": "artifact_production_role",
+  "produced_by_actor": "Codex",
+  "route_id": "protocol_build_route",
+  "required_gate": "artifact_requirement_gate",
+  "ledger_ref": "68b880d6f1d10775761c573908a0df0a8787a483a828841c7bb3979aaa702959",
+  "telemetry_refs": [
+    "evt_0001"
+  ],
+  "claims_final_authority": true,
+  "body": {
+    "role_id": "artifact_production_role",
+    "role_type": "artifact_production",
+    "output_summary": "Produced route, gate decision, telemetry and validation evidence.",
+    "mutation_scope": "approved_generated_files_only",
+    "handoff_to_role": "telemetry_recording_role",
+    "claimed_final_authority": false
+  },
+  "evidence_source": "attestation"
+}

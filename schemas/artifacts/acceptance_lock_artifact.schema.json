@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solomons-key.dev/schemas/artifacts/v1/acceptance_lock_artifact.schema.json",
+  "title": "Acceptance Lock Artifact",
+  "description": "Proof of acceptance lock gate evaluation.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "type": "object",
+  "properties": {
+    "artifact_id": {
+      "const": "acceptance_lock_artifact"
+    },
+    "required_gate": {
+      "const": "acceptance_lock_gate"
+    },
+    "body": {
+      "type": "object",
+      "title": "Proof of acceptance lock gate evaluation",
+      "required": [
+        "user_approval_recorded",
+        "authorization_record_ref",
+        "readiness_checks"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "user_approval_recorded": {
+          "type": "boolean"
+        },
+        "authorization_record_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "readiness_checks": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "evidence_sufficiency_matrix": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "certain",
+              "probable",
+              "unknown",
+              "violated"
+            ]
+          }
+        },
+        "self_authorized": {
+          "const": false,
+          "description": "Final assembly before user acceptance is a terminal block."
+        }
+      }
+    }
+  },
+  "required": [
+    "artifact_id"
+  ]
+}

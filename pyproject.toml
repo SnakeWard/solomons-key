@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "solomons-key"
+version = "0.9.3"
+description = "A verifier for AI-assisted builds: proves whether a step was computed or asserted"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Little Revelations Studio" }]
+keywords = ["attestation", "provenance", "supply-chain", "ai-agents", "verification", "in-toto", "slsa"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Topic :: Security",
+  "Topic :: Software Development :: Quality Assurance",
+  "Programming Language :: Python :: 3.11",
+]
+dependencies = ["PyYAML>=6.0", "jsonschema>=4.18"]
+
+[project.urls]
+Homepage = "https://github.com/SnakeWard/Solomons-Key"
+
+[project.scripts]
+sk-lint = "sk_lint:main"
+sk-ledger = "sk_ledger:main"
+sk-artifacts = "sk_artifacts:main"
+sk-verify = "sk_verify:main"
+sk-handoff = "sk_handoff:main"
+
+[tool.setuptools]
+py-modules = ["sk_lint", "sk_ledger", "sk_artifacts", "sk_verify", "sk_handoff"]

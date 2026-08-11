@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solomons-key.dev/schemas/artifacts/v1/envelope.schema.json",
+  "title": "Solomon's Key Artifact Envelope",
+  "description": "Provenance common to every artifact. An artifact without provenance is not evidence \u2014 it is a file. Every field here exists so a claim can be traced to a run, a pass, a bounded actor, and a ledger entry.",
+  "type": "object",
+  "allOf": [
+    {
+      "$comment": "evidence_source: program requires produced_by_program.",
+      "if": {
+        "properties": {
+          "evidence_source": {
+            "const": "program"
+          }
+        },
+        "required": [
+          "evidence_source"
+        ]
+      },
+      "then": {
+        "required": [
+          "produced_by_program"
+        ]
+      }
+    },
+    {
+      "$comment": "An attested artifact must not claim a producing program.",
+      "if": {
+        "properties": {
+          "evidence_source": {
+            "const": "attestation"
+          }
+        },
+        "required": [
+          "evidence_source"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "produced_by_program"
+          ]
+        }
+      }
+    },
+    {
+      "$comment": "A file-backed input path requires its measured digest.",
+      "if": {
+        "required": [
+          "input_path"
+        ]
+      },
+      "then": {
+        "required": [
+          "input_sha256"
+        ]
+      }
+    }
+  ],
+  "required": [
+    "artifact_id",
+    "artifact_status",
+    "schema_version",
+    "run_id",
+    "pass_id",
+    "timestamp",
+    "produced_by_role",
+    "produced_by_actor",
+    "ledger_ref",
+    "evidence_source",
+    "body"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "artifact_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+    },
+    "artifact_status": {
+      "enum": [
+        "draft",
+        "generated",
+        "validated",
+        "rejected",
+        "repaired",
+        "accepted",
+        "reserved"
+      ]
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pass_id": {
+      "type": "string",
+      "pattern": "^(PASS_[0-9]{2}|GENESIS|RUN_[A-Za-z0-9_-]+)$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "produced_by_role": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+    },
+    "produced_by_actor": {
+      "enum": [
+        "Codex",
+        "Grok",
+        "Claude",
+        "user"
+      ],
+      "description": "No actor outside the bounded set may produce evidence."
+    },
+    "route_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "required_gate": {
+      "description": "The gate this artifact serves as evidence for. Pinned per artifact schema.",
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ledger_ref": {
+      "description": "entry_hash of the ledger entry witnessing this artifact.",
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "const": "pending"
+        }
+      ]
+    },
+    "telemetry_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "input_path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path of the file measured to produce this artifact."
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the measured input, never of the producing executable."
+    },
+    "claims_final_authority": {
+      "const": false,
+      "description": "No AI actor may claim final authority. This may only ever be false."
+    },
+    "evidence_source": {
+      "enum": [
+        "program",
+        "attestation"
+      ],
+      "description": "How this artifact's content was arrived at. 'program' means a named deterministic program computed it and produced_by_program is required. 'attestation' means an actor asserted it. The distinction is the whole difference between a measurement and a claim, and it must be declared."
+    },
+    "produced_by_program": {
+      "description": "The program that computed this artifact. Required when evidence_source is 'program'. Recording which binary produced the evidence is what stops a model from hand-writing an automatic gate's result.",
+      "type": "object",
+      "required": [
+        "name",
+        "sha256"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "body": {
+      "type": "object"
+    }
+  }
+}

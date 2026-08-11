@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solomons-key.dev/schemas/artifacts/v1/skeleton_example_artifact.schema.json",
+  "title": "Skeleton Example Artifact",
+  "description": "Proof of skeleton example existence and non-final status.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "type": "object",
+  "properties": {
+    "artifact_id": {
+      "const": "skeleton_example_artifact"
+    },
+    "required_gate": {
+      "const": "schema_validation_gate"
+    },
+    "body": {
+      "type": "object",
+      "title": "Proof of skeleton example existence and non-final status",
+      "required": [
+        "example_path",
+        "example_sha256",
+        "is_final"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "example_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "example_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "is_final": {
+          "const": false,
+          "description": "A skeleton is by definition not final. No fake completion."
+        },
+        "covers_section": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "artifact_id"
+  ]
+}

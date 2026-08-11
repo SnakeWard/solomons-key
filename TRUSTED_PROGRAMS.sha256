@@ -1,0 +1,32 @@
+# TRUSTED PROGRAMS — the enforcement boundary, stated explicitly.
+#
+# Every artifact declaring evidence_source: program names the binary that
+# produced it and that binary's hash. Without this file that claim is
+# self-referential: a modified emitter records its own modified hash and
+# every downstream check still passes.
+#
+# This file is the root of trust. It is NOT verified by anything in this
+# toolchain. It must be pinned out of band — reviewed, signed, or committed
+# and diffed — exactly as SLSA's trust in a build platform must be.
+# Everything else here reduces to trusting these hashes.
+#
+# Names may be given bare (sk_emit.py) or as subcommands (sk_emit.route);
+# sk-verify falls back from the full name to the base program.
+
+0690304913ecd26e4e5e15aacc8262b2a2aec9589803e5c61caae2c2c2175aa5  sk_emit.py
+0690304913ecd26e4e5e15aacc8262b2a2aec9589803e5c61caae2c2c2175aa5  sk_emit
+0690304913ecd26e4e5e15aacc8262b2a2aec9589803e5c61caae2c2c2175aa5  sk_emit.inventory
+0690304913ecd26e4e5e15aacc8262b2a2aec9589803e5c61caae2c2c2175aa5  sk_emit.boundary
+0690304913ecd26e4e5e15aacc8262b2a2aec9589803e5c61caae2c2c2175aa5  sk_emit.taskframe
+0690304913ecd26e4e5e15aacc8262b2a2aec9589803e5c61caae2c2c2175aa5  sk_emit.route
+0690304913ecd26e4e5e15aacc8262b2a2aec9589803e5c61caae2c2c2175aa5  sk_emit.validate
+0690304913ecd26e4e5e15aacc8262b2a2aec9589803e5c61caae2c2c2175aa5  sk_emit.telemetry
+0690304913ecd26e4e5e15aacc8262b2a2aec9589803e5c61caae2c2c2175aa5  sk_emit.gate
+ea545e3592a07583b7ea32fae2086e180540d644c9158686fad9e1e3d6ba2102  sk_ledger.py
+ea545e3592a07583b7ea32fae2086e180540d644c9158686fad9e1e3d6ba2102  sk_ledger.append
+9e47abb4e421336e5e863a0699a781e3c3fa16e54e285ab9d51675dc8116fb03  sk_artifacts.py
+9e47abb4e421336e5e863a0699a781e3c3fa16e54e285ab9d51675dc8116fb03  sk_artifacts.validate
+b87e1e52e4dd7d1775675650a2dfeb70163222f6f02ec5ba9554b5ffc3c8c918  sk_lint.py
+0ae506822546da2367ba985fd732012a1da9651136755d7a181870f419e3d2db  sk_verify.py
+880c8132c69c37e6beb79464053c197c67396d86c5bd475f61d024ec665c88d3  sk_init.py
+e4aba101b76a5c8fbf58862c0cbf685f9d4facf99f44a18d646a7f516ddb8cf9  sk_adapt.py

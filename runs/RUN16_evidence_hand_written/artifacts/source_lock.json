@@ -1,0 +1,25 @@
+{
+  "artifact_id": "source_boundary_lock_artifact",
+  "artifact_status": "validated",
+  "schema_version": "1.0.0",
+  "run_id": "RUN_build_0001",
+  "pass_id": "PASS_18",
+  "timestamp": "2026-02-03T14:20:00Z",
+  "produced_by_role": "task_intake_validator_role",
+  "produced_by_actor": "Codex",
+  "route_id": "protocol_build_route",
+  "required_gate": "source_boundary_gate",
+  "ledger_ref": "68b880d6f1d10775761c573908a0df0a8787a483a828841c7bb3979aaa702959",
+  "telemetry_refs": [
+    "evt_0001"
+  ],
+  "claims_final_authority": false,
+  "body": {
+    "baseline_inventory_sha256": "b11a85b296a90afc460430434a504e7acb04b064575b7277724688af0e59d189",
+    "current_inventory_sha256": "b11a85b296a90afc460430434a504e7acb04b064575b7277724688af0e59d189",
+    "unmodified": true,
+    "modified_paths": [],
+    "mutation_scope": "read_only"
+  },
+  "evidence_source": "attestation"
+}

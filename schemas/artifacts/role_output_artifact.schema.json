@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solomons-key.dev/schemas/artifacts/v1/role_output_artifact.schema.json",
+  "title": "Role Output Artifact",
+  "description": "Proof of bounded role output.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "type": "object",
+  "properties": {
+    "artifact_id": {
+      "const": "role_output_artifact"
+    },
+    "required_gate": {
+      "const": "artifact_requirement_gate"
+    },
+    "body": {
+      "type": "object",
+      "title": "Proof of bounded role output",
+      "required": [
+        "role_id",
+        "role_type",
+        "output_summary",
+        "mutation_scope"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "role_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+        },
+        "role_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "output_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mutation_scope": {
+          "enum": [
+            "none",
+            "read_only",
+            "generated_workspace_only",
+            "approved_generated_files_only",
+            "repair_generated_files_only",
+            "final_artifact_only_after_acceptance",
+            "forbidden"
+          ]
+        },
+        "handoff_to_role": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "claimed_final_authority": {
+          "const": false
+        }
+      }
+    }
+  },
+  "required": [
+    "artifact_id"
+  ]
+}

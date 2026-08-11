@@ -1,0 +1,26 @@
+{
+  "artifact_id": "role_output_artifact",
+  "artifact_status": "validated",
+  "schema_version": "1.0.0",
+  "run_id": "RUN_demo_0001",
+  "pass_id": "PASS_18",
+  "timestamp": "2026-01-15T09:30:00Z",
+  "produced_by_role": "artifact_production_role",
+  "produced_by_actor": "Codex",
+  "ledger_ref": "68b880d6f1d10775761c573908a0df0a8787a483a828841c7bb3979aaa702959",
+  "telemetry_refs": [
+    "evt_0001"
+  ],
+  "claims_final_authority": false,
+  "body": {
+    "role_id": "artifact_production_role",
+    "role_type": "artifact_production",
+    "output_summary": "Produced gate_decision_artifact and schema_artifact for the build route.",
+    "mutation_scope": "approved_generated_files_only",
+    "handoff_to_role": "telemetry_recording_role",
+    "claimed_final_authority": false
+  },
+  "evidence_source": "attestation",
+  "route_id": "protocol_build_route",
+  "required_gate": "artifact_requirement_gate"
+}

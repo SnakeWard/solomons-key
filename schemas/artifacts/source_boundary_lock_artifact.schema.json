@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solomons-key.dev/schemas/artifacts/v1/source_boundary_lock_artifact.schema.json",
+  "title": "Source Boundary Lock Artifact",
+  "description": "Proof of source boundary enforcement.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "type": "object",
+  "properties": {
+    "artifact_id": {
+      "const": "source_boundary_lock_artifact"
+    },
+    "required_gate": {
+      "const": "source_boundary_gate"
+    },
+    "body": {
+      "type": "object",
+      "title": "Proof of source boundary enforcement",
+      "required": [
+        "baseline_inventory_sha256",
+        "current_inventory_sha256",
+        "unmodified"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "baseline_inventory_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "current_inventory_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "unmodified": {
+          "type": "boolean"
+        },
+        "modified_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "mutation_scope": {
+          "enum": [
+            "none",
+            "read_only"
+          ]
+        }
+      }
+    }
+  },
+  "required": [
+    "artifact_id"
+  ]
+}

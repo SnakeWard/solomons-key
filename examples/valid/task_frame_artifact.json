@@ -1,0 +1,36 @@
+{
+  "artifact_id": "task_frame_artifact",
+  "artifact_status": "validated",
+  "schema_version": "1.0.0",
+  "run_id": "RUN_demo_0001",
+  "pass_id": "PASS_18",
+  "timestamp": "2026-01-15T09:30:00Z",
+  "produced_by_role": "task_intake_validator_role",
+  "produced_by_actor": "user",
+  "ledger_ref": "68b880d6f1d10775761c573908a0df0a8787a483a828841c7bb3979aaa702959",
+  "telemetry_refs": [
+    "evt_0001"
+  ],
+  "claims_final_authority": false,
+  "body": {
+    "task_frame_id": "task.solomons-key.v1.final",
+    "task_type": "protocol_build",
+    "task_scope": "full_governed_protocol_execution",
+    "requested_by": "user",
+    "declared_forbidden_types": [
+      "protected_source_mutation",
+      "unrestricted_shell_execution",
+      "gate_bypass_request",
+      "test_bypass_request",
+      "ledger_bypass_request"
+    ],
+    "task_frame_sha256": "c213a5cd67157aa6a20e8e8ff910982b6c3fc4b44618bc3055bcc1cb56c01c2c"
+  },
+  "evidence_source": "program",
+  "produced_by_program": {
+    "name": "sk_emit.taskframe",
+    "sha256": "d775cb49005371fcbadc6ea5d480f007edf42aa1c4e60f98271486e569d8e1dc"
+  },
+  "route_id": "protocol_build_route",
+  "required_gate": "task_frame_gate"
+}

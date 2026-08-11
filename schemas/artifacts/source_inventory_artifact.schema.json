@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solomons-key.dev/schemas/artifacts/v1/source_inventory_artifact.schema.json",
+  "title": "Source Inventory Artifact",
+  "description": "Proof of protected source file inventory and read-only status.",
+  "allOf": [
+    {
+      "$ref": "envelope.schema.json"
+    }
+  ],
+  "type": "object",
+  "properties": {
+    "artifact_id": {
+      "const": "source_inventory_artifact"
+    },
+    "required_gate": {
+      "const": "source_boundary_gate"
+    },
+    "body": {
+      "type": "object",
+      "title": "Proof of protected source file inventory and read-only status",
+      "required": [
+        "source_root",
+        "files",
+        "inventory_sha256"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "source_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "sha256",
+              "bytes"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "inventory_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  },
+  "required": [
+    "artifact_id"
+  ]
+}
