@@ -21,7 +21,9 @@ import contextlib
 import io
 import json
 import os
+import subprocess
 import sys
+import tempfile
 
 import yaml
 
@@ -58,6 +60,23 @@ def main() -> int:
     with contextlib.redirect_stdout(io.StringIO()):
         rc = sk_lint.main([GREEN, "--json"])
     check("green_baseline_exit_zero", rc == 0, "" if rc == 0 else f"exit {rc}")
+
+    with tempfile.TemporaryDirectory() as td:
+        repaired = os.path.join(td, "key.repaired.yaml")
+        proc = subprocess.run(
+            [sys.executable, os.path.join(HERE, "repair_pass.py"),
+             os.path.join(HERE, "key.yaml"), repaired],
+            capture_output=True,
+            text=True,
+        )
+        repaired_bytes = open(repaired, "rb").read() if os.path.isfile(repaired) else b""
+        portable_repair = proc.returncode == 0 and b"\r\n" not in repaired_bytes
+        check(
+            "repair_output_uses_canonical_lf",
+            portable_repair,
+            "" if portable_repair else
+            (proc.stderr.strip() or "repair output contains CRLF bytes"),
+        )
 
     # --- 2. red fixtures ---------------------------------------------
     manifest_path = os.path.join(CORPUS, "manifest.json")

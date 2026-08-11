@@ -304,7 +304,8 @@ def main() -> int:
     )
     text = header + text
 
-    open(dst, "w", encoding="utf-8").write(text)
+    with open(dst, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
     print(f"repair_pass: {src} -> {dst}")
     for line in log1 + log2 + log3 + log4 + log5:
         print(line)
