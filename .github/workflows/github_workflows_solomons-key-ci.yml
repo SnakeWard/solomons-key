@@ -1,0 +1,75 @@
+name: "Solomon's Key: derive→emit→verify (isolated)"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  sk-verify:
+    runs-on: ubuntu-latest
+    env:
+      LEDGER_PATH: ledger/ledger.json
+      ROUTE_ID: task.solomons-key.v1.build
+      OUTDIR: runs/ci_run
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure helper script is executable
+        run: chmod +x .github/scripts/run_sk_flow.sh
+
+      - name: Run derive→emit→verify inside isolated container (network off)
+        id: run_sk
+        continue-on-error: true
+        run: |
+          # Run the flow inside a disposable Python container with no network
+          docker run --rm \
+            -v "${{ github.workspace }}":/work -w /work \
+            --network none \
+            python:3.11-slim \
+            bash -ec "set -euo pipefail
+            # ensure pip is recent
+            pip install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
+            # try install repo requirements if present (best-effort)
+            if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt || true; fi
+            # install package so CLIs are available (if setup.py/pyproject exists)
+            if [ -f pyproject.toml ] || [ -f setup.py ]; then pip install . || true; fi
+            # run the SK flow script (captures output into sk_flow.log)
+            bash .github/scripts/run_sk_flow.sh"
+      - name: Upload SK flow log
+        uses: actions/upload-artifact@v4
+        with:
+          name: sk_flow_log
+          path: sk_flow.log
+
+      - name: Post results to PR
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = 'sk_flow.log';
+            let body = '### Solomon\\'s Key verification results\\n';
+            if (fs.existsSync(path)) {
+              const txt = fs.readFileSync(path, 'utf8');
+              // trim if huge
+              const trimmed = txt.length > 64000 ? txt.slice(-64000) : txt;
+              body += '```\n' + trimmed + '\n```\n';
+            } else {
+              body += '_No log produced._';
+            }
+            const pr = context.issue.number;
+            if (!pr) {
+              console.log('Not a PR context: skipping comment');
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr,
+                body,
+              });
+            }
