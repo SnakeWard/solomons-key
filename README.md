@@ -159,6 +159,17 @@ That distinction is stated at its true size on purpose. Claiming the larger thin
 
 Python 3.11+, `PyYAML`, `jsonschema`. Nothing else, deliberately — a verifier with a large dependency surface is a verifier with a large attack surface.
 
+Install the complete command suite from a checkout with:
+
+```text
+python -m pip install .
+```
+
+The wheel provides `sk-init`, `sk-adapt`, `sk-lint`, `sk-ledger`,
+`sk-artifacts`, `sk-emit`, `sk-verify`, and `sk-handoff`. Its artifact schemas
+ship as package resources, so validation works outside the source checkout;
+`--schemas` and `SK_SCHEMA_DIR` remain explicit override paths.
+
 Windows users: use `build.py`, not the Makefile. The Makefile needs `rm`, `sha256sum`, and shell substitution.
 
 Release builds use a separate, exactly pinned tool environment so packaging
@@ -168,10 +179,16 @@ tools do not enlarge the verifier's runtime dependency surface:
 python -m venv .venv-release
 .venv-release/Scripts/python -m pip install -r requirements-release.txt
 $env:SK_RELEASE_PYTHON = ".venv-release/Scripts/python.exe"
+python build.py acceptance
 python build.py dist
 ```
 
 On POSIX, use
-`SK_RELEASE_PYTHON=.venv-release/bin/python python build.py dist`. `VERSION` is the only version source;
+`SK_RELEASE_PYTHON=.venv-release/bin/python python build.py acceptance` before
+`dist`. The acceptance gate builds twice in independent temporary source
+trees, runs `twine check --strict`, installs the wheel into a fresh environment
+outside the checkout, and exercises the installed
+`sk-init -> sk-lint -> sk-adapt -> sk-verify` path. It does not alter the live
+release record or create live release artifacts. `VERSION` is the only version source;
 `pyproject.toml` reads it dynamically. `dist` records the governed tree, drop
 tarball, Python sdist, and wheel hashes together as one immutable release set.

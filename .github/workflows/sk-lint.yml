@@ -131,3 +131,7 @@ jobs:
         env:
           SK_RELEASE_PYTHON: python
         run: python test_sk_release.py
+      - name: Reproducible build and installed-distribution acceptance
+        env:
+          SK_RELEASE_PYTHON: python
+        run: python build.py acceptance

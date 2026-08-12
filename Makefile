@@ -1,4 +1,4 @@
-.PHONY: all dist release-check test-release test-emit pin verify-drop handoff-check repair schemas examples corpus runs test lint artifacts verify ledger ledger-verify rules clean
+.PHONY: all acceptance dist release-check test-release test-emit pin verify-drop handoff-check repair schemas examples corpus runs test lint artifacts verify ledger ledger-verify rules clean
 
 all: repair ledger schemas examples corpus runs test lint artifacts verify ledger-verify
 
@@ -57,6 +57,9 @@ release-check:
 
 test-release:
 	python3 build.py test-release
+
+acceptance:
+	python3 build.py acceptance
 
 verify-drop:
 	python3 sk_handoff.py verify-drop

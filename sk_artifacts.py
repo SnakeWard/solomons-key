@@ -35,6 +35,8 @@ import os
 import sys
 from dataclasses import dataclass, asdict
 
+from sk_resources import default_schema_dir
+
 try:
     from jsonschema import Draft202012Validator
     from referencing import Registry, Resource
@@ -42,7 +44,7 @@ except ImportError:
     sys.stderr.write("sk-artifacts requires jsonschema>=4.18 (pip install jsonschema)\n")
     sys.exit(3)
 
-DEFAULT_SCHEMA_DIR = "schemas/artifacts"
+DEFAULT_SCHEMA_DIR = default_schema_dir()
 
 
 @dataclass

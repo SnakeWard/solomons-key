@@ -31,6 +31,8 @@ except ImportError:
     sys.stderr.write("sk-lint requires PyYAML (pip install pyyaml)\n")
     sys.exit(3)
 
+from sk_resources import default_schema_dir
+
 
 class LineLoader(yaml.SafeLoader):
     """SafeLoader that records the source line of every mapping.
@@ -103,8 +105,9 @@ AUTOMATIC_CANDIDATES = {
 
 VALID_ENFORCEMENT_CLASSES = {"automatic", "attested", "composite", "unimplemented"}
 
-# Where artifact JSON Schemas live. SK023 is skipped if this is absent.
-SCHEMA_DIR = os.environ.get("SK_SCHEMA_DIR", "schemas/artifacts")
+# Where artifact JSON Schemas live. An environment override remains available,
+# while installed commands discover the schema set shipped in their wheel.
+SCHEMA_DIR = default_schema_dir()
 
 
 @dataclass

@@ -13,6 +13,7 @@ This is the Makefile's logic in Python. Same targets, same order, no shell.
     python build.py test       # test suites only
     python build.py verify     # lint + artifacts + verify + ledger
     python build.py docs       # check documented counts against reality
+    python build.py acceptance # double-build and installed-wheel release gate
     python build.py dist       # immutable tarball + sdist + wheel release set
     python build.py release-check   # re-derive recorded releases, report drift
     python build.py --list
@@ -816,6 +817,7 @@ TARGETS: dict[str, list] = {
     ],
     "test-emit": [Step("test_sk_emit", ["test_sk_emit.py"])],
     "test-release": [Step("test_sk_release", ["test_sk_release.py"])],
+    "acceptance": [Step("test_sk_acceptance", ["test_sk_acceptance.py"])],
     "lint": [Step("lint", ["sk_lint.py", KEY])],
     "artifacts": [Step("artifacts", ["sk_artifacts.py", "validate", "--dir", "examples/valid",
                                      "--key", KEY, "--ledger", LEDGER])],

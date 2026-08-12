@@ -408,7 +408,7 @@ def main(argv: list[str] | None = None) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("run_dir")
     ap.add_argument("--key", default=None, help="KEY file (default: from run.json key_file)")
-    ap.add_argument("--schemas", default="schemas/artifacts")
+    ap.add_argument("--schemas", default=A.DEFAULT_SCHEMA_DIR)
     ap.add_argument("--ledger", default=None)
     ap.add_argument("--trusted", default=None,
                     help="allowlist of program name -> sha256 (default: TRUSTED_PROGRAMS.sha256)")

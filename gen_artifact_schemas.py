@@ -521,6 +521,12 @@ def main() -> int:
 
     os.makedirs(outdir, exist_ok=True)
 
+    # The generated directory is also mapped into the installed wheel as
+    # solomons_key._schemas. Keeping this marker generated means the checkout
+    # schemas and the packaged schemas cannot drift into two copies.
+    with open(os.path.join(outdir, "__init__.py"), "w", encoding="utf-8", newline="\n") as fh:
+        fh.write('"""Generated Solomon\'s Key artifact schemas."""\n')
+
     env = envelope_schema(status_values)
     with open(os.path.join(outdir, "envelope.schema.json"), "w", encoding="utf-8") as fh:
         json.dump(env, fh, indent=2)

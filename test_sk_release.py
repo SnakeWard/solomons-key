@@ -8,6 +8,7 @@ names one reproducible drop tarball, sdist, and wheel.
 
 from __future__ import annotations
 
+import configparser
 import hashlib
 import json
 import os
@@ -102,6 +103,32 @@ def main() -> int:
             .get("version") == {"file": ["VERSION"]},
             "setuptools dynamic version is not sourced from VERSION",
         )
+        declared_modules = set(project.get("tool", {}).get("setuptools", {}).get("py-modules", []))
+        runtime_modules = {
+            os.path.splitext(name)[0]
+            for name in os.listdir(work)
+            if name.startswith("sk_") and name.endswith(".py")
+        }
+        check(
+            "every_runtime_module_is_packaged",
+            declared_modules == runtime_modules,
+            f"declared={sorted(declared_modules)}, runtime={sorted(runtime_modules)}",
+        )
+        expected_scripts = {
+            "sk-init": "sk_init:main",
+            "sk-adapt": "sk_adapt:main",
+            "sk-lint": "sk_lint:main",
+            "sk-ledger": "sk_ledger:main",
+            "sk-artifacts": "sk_artifacts:main",
+            "sk-emit": "sk_emit:main",
+            "sk-verify": "sk_verify:main",
+            "sk-handoff": "sk_handoff:main",
+        }
+        check(
+            "every_runtime_cli_is_declared",
+            project.get("project", {}).get("scripts") == expected_scripts,
+            str(project.get("project", {}).get("scripts")),
+        )
 
         parser_probe = (
             "import build; "
@@ -150,6 +177,88 @@ def main() -> int:
               tree_output.strip())
         check("sdist_metadata_matches_VERSION", metadata_version(paths["sdist"]) == version)
         check("wheel_metadata_matches_VERSION", metadata_version(paths["wheel"]) == version)
+
+        with zipfile.ZipFile(paths["wheel"]) as archive:
+            wheel_names = set(archive.namelist())
+            packaged_modules = {f"{module}.py" for module in declared_modules}
+            check(
+                "wheel_contains_every_runtime_module",
+                packaged_modules <= wheel_names,
+                f"missing {sorted(packaged_modules - wheel_names)}",
+            )
+            source_schemas = {
+                name for name in os.listdir(os.path.join(work, "schemas", "artifacts"))
+                if name.endswith(".schema.json")
+            }
+            wheel_schemas = {
+                os.path.basename(name) for name in wheel_names
+                if name.startswith("solomons_key/_schemas/") and name.endswith(".schema.json")
+            }
+            check(
+                "wheel_contains_complete_schema_set",
+                wheel_schemas == source_schemas,
+                f"wheel={sorted(wheel_schemas)}, source={sorted(source_schemas)}",
+            )
+            entry_point_names = [name for name in wheel_names if name.endswith(".dist-info/entry_points.txt")]
+            installed_scripts: dict[str, str] = {}
+            if len(entry_point_names) == 1:
+                parser = configparser.ConfigParser()
+                parser.read_string(archive.read(entry_point_names[0]).decode("utf-8"))
+                installed_scripts = dict(parser["console_scripts"])
+            check(
+                "wheel_declares_every_console_script",
+                installed_scripts == expected_scripts,
+                f"wheel scripts={installed_scripts}",
+            )
+
+            unpacked = os.path.join(temp, "unpacked-wheel")
+            archive.extractall(unpacked)
+
+        outside = os.path.join(temp, "outside-checkout")
+        os.makedirs(outside)
+        import_probe = """\
+import importlib
+import json
+import os
+import sys
+
+layout = os.path.abspath(sys.argv[1])
+sys.path.insert(0, layout)
+modules = json.loads(sys.argv[2])
+for module in modules:
+    imported = importlib.import_module(module)
+    if not os.path.abspath(imported.__file__).startswith(layout + os.sep):
+        raise SystemExit(f"{module} imported from {imported.__file__}, not the wheel layout")
+import sk_artifacts
+import sk_lint
+import sk_resources
+schema_dir = os.path.abspath(sk_resources.default_schema_dir())
+schemas = sorted(name for name in os.listdir(schema_dir) if name.endswith(".schema.json"))
+print(json.dumps({
+    "schema_dir": schema_dir,
+    "schemas": schemas,
+    "artifacts_default": os.path.abspath(sk_artifacts.DEFAULT_SCHEMA_DIR),
+    "lint_default": os.path.abspath(sk_lint.SCHEMA_DIR),
+}))
+"""
+        rc, output = run(
+            ["-c", import_probe, unpacked, json.dumps(sorted(declared_modules))],
+            outside,
+        )
+        try:
+            discovery = json.loads(output) if rc == 0 else {}
+        except json.JSONDecodeError:
+            discovery = {}
+        discovered_dir = discovery.get("schema_dir", "")
+        check(
+            "unpacked_wheel_discovers_packaged_schemas_outside_checkout",
+            rc == 0
+            and discovered_dir.startswith(os.path.abspath(unpacked) + os.sep)
+            and set(discovery.get("schemas", [])) == source_schemas
+            and discovery.get("artifacts_default") == discovered_dir
+            and discovery.get("lint_default") == discovered_dir,
+            output.strip()[-500:],
+        )
 
         releases_path = os.path.join(work, "RELEASES.md")
         release_text_after_first = open(releases_path, encoding="utf-8").read()

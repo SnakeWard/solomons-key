@@ -39,6 +39,7 @@ import json
 import os
 import re
 import sys
+import tomllib
 
 # Files under governance. Generated corpora are excluded deliberately: they are
 # reproducible from their generators, and pinning them would make every
@@ -186,7 +187,10 @@ EXPLICIT_REQUIRED = {
     ],
     "trust root": ["TRUSTED_PROGRAMS.sha256", "TRUST_BOUNDARY.md"],
     "build": ["build.py", "Makefile", "TREE.sha256", "VERSION"],
-    "packaging": ["pyproject.toml", "requirements.txt", "LICENSE", ".gitignore"],
+    "packaging": [
+        "pyproject.toml", "requirements.txt", "requirements-release.txt",
+        "LICENSE", ".gitignore", "solomons_key/__init__.py",
+    ],
 }
 
 
@@ -212,6 +216,22 @@ def derive_required(root: str) -> dict[str, list[str]]:
         # Step(...) argv lists and direct references to <name>.py
         invoked |= set(re.findall(r'"([A-Za-z_][A-Za-z0-9_]*\.py)"', src))
         invoked.discard("build.py")
+
+    # Packaging is executable scope too. Every declared top-level module and
+    # every console-script target must survive the handoff even when no current
+    # repository test happens to import it.
+    project_path = os.path.join(root, "pyproject.toml")
+    if os.path.exists(project_path):
+        with open(project_path, "rb") as fh:
+            project = tomllib.load(fh)
+        setuptools_config = project.get("tool", {}).get("setuptools", {})
+        for module in setuptools_config.get("py-modules", []):
+            invoked.add(f"{module}.py")
+        scripts = project.get("project", {}).get("scripts", {})
+        for target in scripts.values():
+            module = str(target).partition(":")[0]
+            if module.startswith("sk_"):
+                invoked.add(f"{module}.py")
 
     tests: set[str] = set()
     tools: set[str] = set()
