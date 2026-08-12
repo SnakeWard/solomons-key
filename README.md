@@ -198,5 +198,8 @@ TestPyPI workflow. Its build job proves the recorded release set before handing
 only the sdist and wheel to an isolated `testpypi` environment. The publishing
 job receives a short-lived OIDC identity and has no repository write permission
 or stored API token. A manual dispatch accepts one existing prerelease tag only
-as a recovery path: it checks out that immutable tag and repeats the same gates;
-it cannot rename the release or move the tag.
+as a recovery path for a pre-normalization release: it retrieves the original
+release bytes from the corresponding `release-assets-vTAG` transport branch,
+checks every byte against `RELEASES.md`, runs strict metadata and installed-wheel
+acceptance, and only then hands the sdist and wheel to the same OIDC publisher.
+It cannot rename the release, move the tag, or substitute a rebuilt artifact.

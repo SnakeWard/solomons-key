@@ -78,26 +78,29 @@ def main() -> int:
 
     build_env = build.get("env") or {}
     release_tag_expression = str(build_env.get("RELEASE_TAG") or "")
-    checkout_config = next(
-        (step.get("with") or {} for step in build_steps
-         if str(step.get("uses") or "").startswith("actions/checkout@")),
-        {},
-    )
+    checkout_configs = [
+        step.get("with") or {} for step in build_steps
+        if str(step.get("uses") or "").startswith("actions/checkout@")
+    ]
     setup_config = next(
         (step.get("with") or {} for step in build_steps
          if str(step.get("uses") or "").startswith("actions/setup-python@")),
         {},
     )
-    runner = str(build.get("runs-on") or "")
     check(
-        "manual_recovery_is_tag_bound_and_platform_exact",
+        "manual_recovery_is_tag_bound_to_recorded_bytes",
         "inputs.release_tag" in release_tag_expression
         and "github.ref_name" in release_tag_expression
-        and "env.RELEASE_TAG" in str(checkout_config.get("ref") or "")
-        and "windows-latest" in runner
-        and "ubuntu-latest" in runner
-        and "3.14.0" in str(setup_config.get("python-version") or ""),
-        f"env={build_env}, checkout={checkout_config}, runner={runner}, setup={setup_config}",
+        and len(checkout_configs) == 3
+        and "env.RELEASE_TAG" in str(checkout_configs[0].get("ref") or "")
+        and "github.sha" in str(checkout_configs[1].get("ref") or "")
+        and checkout_configs[1].get("path") == ".workflow-source"
+        and "release-assets-" in str(checkout_configs[2].get("ref") or "")
+        and "env.RELEASE_TAG" in str(checkout_configs[2].get("ref") or "")
+        and checkout_configs[2].get("path") == ".release-assets"
+        and build.get("runs-on") == "ubuntu-latest"
+        and setup_config.get("python-version") == "3.11",
+        f"env={build_env}, checkouts={checkout_configs}, setup={setup_config}",
     )
 
     build_commands = "\n".join(str(step.get("run") or "") for step in build_steps)
@@ -114,6 +117,12 @@ def main() -> int:
     check(
         "recorded_release_set_is_rebuilt_and_checked",
         "build.py dist release-check" in build_commands,
+    )
+    check(
+        "manual_recovery_verifies_and_installs_exact_recorded_bytes",
+        "build.py verify-drop release-check" in build_commands
+        and "twine check --strict" in build_commands
+        and ".workflow-source/test_release_artifact.py" in build_commands,
     )
     check(
         "only_sdist_and_wheel_are_handed_to_publisher",
