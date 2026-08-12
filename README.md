@@ -160,3 +160,18 @@ That distinction is stated at its true size on purpose. Claiming the larger thin
 Python 3.11+, `PyYAML`, `jsonschema`. Nothing else, deliberately — a verifier with a large dependency surface is a verifier with a large attack surface.
 
 Windows users: use `build.py`, not the Makefile. The Makefile needs `rm`, `sha256sum`, and shell substitution.
+
+Release builds use a separate, exactly pinned tool environment so packaging
+tools do not enlarge the verifier's runtime dependency surface:
+
+```text
+python -m venv .venv-release
+.venv-release/Scripts/python -m pip install -r requirements-release.txt
+$env:SK_RELEASE_PYTHON = ".venv-release/Scripts/python.exe"
+python build.py dist
+```
+
+On POSIX, use
+`SK_RELEASE_PYTHON=.venv-release/bin/python python build.py dist`. `VERSION` is the only version source;
+`pyproject.toml` reads it dynamically. `dist` records the governed tree, drop
+tarball, Python sdist, and wheel hashes together as one immutable release set.

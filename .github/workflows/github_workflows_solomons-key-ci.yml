@@ -3,6 +3,7 @@ name: "Solomon's Key: derive→emit→verify (isolated)"
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,42 +13,56 @@ jobs:
   sk-verify:
     runs-on: ubuntu-latest
     env:
-      LEDGER_PATH: ledger/ledger.json
-      ROUTE_ID: task.solomons-key.v1.build
+      LEDGER_PATH: ledger/solomons-key-builder-ledger.jsonl
+      ROUTE_ID: protocol_build_route
       OUTDIR: runs/ci_run
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure helper script is executable
-        run: chmod +x .github/scripts/run_sk_flow.sh
+      - name: Set up Python for dependency staging
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Stage dependencies for the network-isolated container
+        run: |
+          python -m pip download \
+            --dest "${{ runner.temp }}/sk-wheelhouse" \
+            --only-binary=:all: \
+            --requirement requirements.txt
 
       - name: Run derive→emit→verify inside isolated container (network off)
         id: run_sk
-        continue-on-error: true
         run: |
-          # Run the flow inside a disposable Python container with no network
           docker run --rm \
             -v "${{ github.workspace }}":/work -w /work \
+            -v "${{ runner.temp }}/sk-wheelhouse":/wheelhouse:ro \
             --network none \
+            -e LEDGER_PATH \
+            -e ROUTE_ID \
+            -e OUTDIR \
             python:3.11-slim \
-            bash -ec "set -euo pipefail
-            # ensure pip is recent
-            pip install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
-            # try install repo requirements if present (best-effort)
-            if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt || true; fi
-            # install package so CLIs are available (if setup.py/pyproject exists)
-            if [ -f pyproject.toml ] || [ -f setup.py ]; then pip install . || true; fi
-            # run the SK flow script (captures output into sk_flow.log)
-            bash .github/scripts/run_sk_flow.sh"
+            bash -ec '
+              python -m pip install \
+                --disable-pip-version-check \
+                --no-index \
+                --find-links=/wheelhouse \
+                --requirement requirements.txt
+              bash .github/scripts/run_sk_flow.sh
+            '
+
       - name: Upload SK flow log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sk_flow_log
           path: sk_flow.log
+          if-no-files-found: warn
 
       - name: Post results to PR
-        uses: actions/github-script@v6
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools==84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "solomons-key"
-version = "0.9.3"
+dynamic = ["version"]
 description = "A verifier for AI-assisted builds: proves whether a step was computed or asserted"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -32,3 +32,6 @@ sk-handoff = "sk_handoff:main"
 
 [tool.setuptools]
 py-modules = ["sk_lint", "sk_ledger", "sk_artifacts", "sk_verify", "sk_handoff"]
+
+[tool.setuptools.dynamic]
+version = { file = ["VERSION"] }

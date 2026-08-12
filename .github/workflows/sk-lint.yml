@@ -32,6 +32,9 @@ jobs:
       - name: Rules discriminate
         run: python3 test_sk_lint.py
 
+      - name: Derive, emit, and verify wrapper fails closed
+        run: python3 test_ci_flow.py
+
       - name: Lint the shipped KEY file
         run: python3 sk_lint.py key.repaired.yaml
 
@@ -114,3 +117,17 @@ jobs:
             fi
             echo "Append-only preserved: $OLD prior entries unchanged."
           fi
+
+  release-identity:
+    name: Immutable release identity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install runtime and exactly pinned release tools
+        run: pip install --requirement requirements.txt --requirement requirements-release.txt
+      - name: Version, prerelease, and three-artifact release gate
+        env:
+          SK_RELEASE_PYTHON: python
+        run: python test_sk_release.py

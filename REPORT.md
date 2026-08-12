@@ -1,7 +1,7 @@
 # Computed or Asserted
 
 <!-- counts:begin -->
-**23** lint rules · **19** run rules · **13** semantic rules · **138** tests passing
+**23** lint rules · **19** run rules · **13** semantic rules · **157** tests passing
 <!-- counts:end -->
 
 ### A verification toolchain for AI-assisted software builds

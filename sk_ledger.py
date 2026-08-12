@@ -138,7 +138,7 @@ def read_chain(path: str) -> list[dict[str, Any]]:
 
 
 def append_line(path: str, entry: dict[str, Any]) -> None:
-    with open(path, "a", encoding="utf-8") as fh:
+    with open(path, "a", encoding="utf-8", newline="\n") as fh:
         fh.write(json.dumps(order(entry), ensure_ascii=False) + "\n")
 
 
@@ -552,7 +552,7 @@ def cmd_graft(args) -> int:
         grafted.append((e[HASH_FIELD], new[HASH_FIELD]))
         prev, seq = new[HASH_FIELD], seq + 1
 
-    with open(args.out, "w", encoding="utf-8") as fh:
+    with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
         for e in merged:
             fh.write(json.dumps(order(e), ensure_ascii=False) + "\n")
 

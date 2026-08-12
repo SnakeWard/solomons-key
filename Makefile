@@ -1,4 +1,4 @@
-.PHONY: all dist test-emit pin verify-drop handoff-check repair schemas examples corpus runs test lint artifacts verify ledger ledger-verify rules clean
+.PHONY: all dist release-check test-release test-emit pin verify-drop handoff-check repair schemas examples corpus runs test lint artifacts verify ledger ledger-verify rules clean
 
 all: repair ledger schemas examples corpus runs test lint artifacts verify ledger-verify
 
@@ -49,8 +49,14 @@ ledger-verify:
 	python3 sk_ledger.py verify ledger/solomons-key-builder-ledger.jsonl \
 		--expect-head $$(cat ledger/HEAD)
 
-dist: all pin
-	@V=$$(cat VERSION); D=solomons-key-v$$V; 	rm -rf /tmp/$$D && mkdir -p /tmp/$$D; 	tar --exclude=__pycache__ --exclude='*.pyc' -cf - . | (cd /tmp/$$D && tar -xf -); 	(cd /tmp && tar -czf $$D.tar.gz $$D); 	mv /tmp/$$D.tar.gz .; 	rm -rf /tmp/$$D; 	echo "dist: $$D.tar.gz"; 	sha256sum $$D.tar.gz; 	echo; echo "Recipient runs first:"; 	echo "  tar -xzf $$D.tar.gz && cd $$D && python3 sk_handoff.py verify-drop"
+dist:
+	python3 build.py dist
+
+release-check:
+	python3 build.py release-check
+
+test-release:
+	python3 build.py test-release
 
 verify-drop:
 	python3 sk_handoff.py verify-drop

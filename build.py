@@ -13,7 +13,7 @@ This is the Makefile's logic in Python. Same targets, same order, no shell.
     python build.py test       # test suites only
     python build.py verify     # lint + artifacts + verify + ledger
     python build.py docs       # check documented counts against reality
-    python build.py dist       # versioned tarball, recorded in RELEASES.md
+    python build.py dist       # immutable tarball + sdist + wheel release set
     python build.py release-check   # re-derive recorded releases, report drift
     python build.py --list
 
@@ -23,8 +23,10 @@ Exit code is nonzero if any step fails.
 from __future__ import annotations
 
 import argparse
+import copy
 import gzip
 import hashlib
+import io
 import json
 import os
 import re
@@ -33,6 +35,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PY = sys.executable
@@ -148,7 +151,7 @@ def ledger() -> int:
     if rc:
         sys.stdout.write(out)
         return rc
-    with open(os.path.join(HERE, HEAD), "w", encoding="utf-8") as fh:
+    with open(os.path.join(HERE, HEAD), "w", encoding="utf-8", newline="\n") as fh:
         fh.write(out.strip() + "\n")
     print(f"ledger: head written to {HEAD}")
     return 0
@@ -220,7 +223,9 @@ def _excluded(arcpath: str) -> bool:
     # different path and still ships — CI config is part of what is released.
     if ".git" in parts:
         return True
-    if base.endswith((".pyc", ".tar.gz")):
+    if base.endswith((".pyc", ".tar.gz", ".whl", ".egg-info")):
+        return True
+    if any(part in {".venv", ".venv-release", "venv", "build", "dist"} for part in parts):
         return True
     if base == RELEASES:
         return True
@@ -300,131 +305,389 @@ def git_commit() -> str:
 
 
 HEX64 = re.compile(r"\b([0-9a-f]{64})\b")
-VER_RE = re.compile(r"v?(\d+\.\d+\.\d+)")
+PEP440_PRERELEASE = (
+    r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
+    r"(?:(?:a|b|rc)(?:0|[1-9]\d*))?"
+)
+VERSION_RE = re.compile(rf"{PEP440_PRERELEASE}\Z")
+VERSION_TOKEN_RE = re.compile(
+    rf"(?<![A-Za-z0-9])v?({PEP440_PRERELEASE})(?![A-Za-z0-9.])"
+)
 
 
-def read_releases() -> dict[str, dict[str, str]]:
-    """Parse RELEASES.md the same way the acceptance gate does.
+class ReleaseRecordError(ValueError):
+    """RELEASES.md contains an ambiguous or partial release identity."""
 
-    A line is a release entry only if it carries a version AND two full 64-hex
-    digests. Historical notes deliberately quote truncated hashes so that a
-    superseded artifact or a skipped version is never read as a release.
+
+def read_version() -> str:
+    """Read the one canonical version used by archives and package metadata."""
+    version = open(os.path.join(HERE, "VERSION"), encoding="utf-8").read().strip()
+    if not VERSION_RE.fullmatch(version):
+        raise ValueError(
+            "VERSION must be canonical X.Y.Z, X.Y.ZaN, X.Y.ZbN, or X.Y.ZrcN; "
+            f"got {version!r}"
+        )
+    return version
+
+
+def read_releases() -> dict[str, dict[str, object]]:
+    """Parse legacy two-digest rows and immutable four-digest release sets.
+
+    A release identity is one line so it cannot be observed half-written. Two
+    hashes mean a historical tree/tarball row. Four mean tree, drop tarball,
+    Python sdist, and wheel. Three hashes are a corrupt partial release set and
+    fail closed instead of being silently mistaken for history.
     """
     path = os.path.join(HERE, RELEASES)
-    entries: dict[str, dict[str, str]] = {}
+    entries: dict[str, dict[str, object]] = {}
     if not os.path.exists(path):
         return entries
-    for line in open(path, encoding="utf-8").read().splitlines():
-        m = VER_RE.search(line)
+    for line_number, line in enumerate(
+        open(path, encoding="utf-8").read().splitlines(), start=1
+    ):
+        match = VERSION_TOKEN_RE.search(line)
         hashes = HEX64.findall(line)
-        if m and len(hashes) >= 2:
-            entries[m.group(1)] = {"tree": hashes[0], "artifact": hashes[1]}
+        if not match or len(hashes) < 2:
+            continue
+        if len(hashes) not in (2, 4):
+            raise ReleaseRecordError(
+                f"{RELEASES}:{line_number}: release rows require exactly two "
+                f"legacy hashes or four release-set hashes; found {len(hashes)}"
+            )
+        version = match.group(1)
+        record: dict[str, object] = {
+            "tree": hashes[0],
+            "tarball": hashes[1],
+            "sdist": hashes[2] if len(hashes) == 4 else None,
+            "wheel": hashes[3] if len(hashes) == 4 else None,
+            "legacy": len(hashes) == 2,
+        }
+        if version in entries and entries[version] != record:
+            raise ReleaseRecordError(
+                f"{RELEASES}:{line_number}: v{version} has more than one identity"
+            )
+        entries[version] = record
     return entries
 
 
-def append_release(version: str, tree: str, artifact: str, commit: str) -> None:
+def append_release_set(
+    version: str,
+    tree: str,
+    tarball: str,
+    sdist: str,
+    wheel: str,
+    commit: str,
+) -> None:
     path = os.path.join(HERE, RELEASES)
-    row = f"| v{version} | `{tree}` | `{artifact}` | `{commit}` | released |\n"
+    row = (
+        f"| v{version} | `{tree}` | `{tarball}` | `{sdist}` | `{wheel}` | "
+        f"`{commit}` | released |\n"
+    )
     text = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
-    marker = "<!-- releases:end -->"
-    if marker in text:
-        i = text.index(marker)
-        text = text[:i] + row + text[i:]
-    else:
-        text += row
-    open(path, "w", encoding="utf-8").write(text)
-
-
-def dist() -> int:
-    version = open(os.path.join(HERE, "VERSION"), encoding="utf-8").read().strip()
-    name = f"solomons-key-v{version}"
-    tarball = os.path.join(HERE, f"{name}.tar.gz")
-
-    # Pack to a temporary file and decide afterwards. The previous version
-    # removed the existing tarball before packing, so any refusal below would
-    # have destroyed the artifact it was refusing to overwrite.
-    fd, staged = tempfile.mkstemp(prefix=f"{name}.", suffix=".tar.gz", dir=HERE)
-    os.close(fd)
+    marker = "<!-- release-sets:end -->"
+    if marker not in text:
+        raise ReleaseRecordError(f"{RELEASES} is missing {marker}")
+    index = text.index(marker)
+    text = text[:index] + row + text[index:]
+    fd, staged = tempfile.mkstemp(prefix=".RELEASES.", suffix=".tmp", dir=HERE)
     try:
-        _pack(staged, name)
-        artifact = sha256_file(staged)
-        tree = tree_hash()
-        recorded = read_releases().get(version)
-
-        if recorded:
-            tree_moved = recorded["tree"] != tree
-            art_moved = recorded["artifact"] != artifact
-            if tree_moved or art_moved:
-                print(f"dist: REFUSING to re-cut v{version} — it is already recorded")
-                print(f"      in {RELEASES} with different content.")
-                print()
-                if tree_moved:
-                    print(f"      recorded tree      {recorded['tree']}")
-                    print(f"      current  tree      {tree}")
-                if art_moved:
-                    print(f"      recorded artifact  {recorded['artifact']}")
-                    print(f"      current  artifact  {artifact}")
-                print()
-                print("      A version name resolves to exactly one artifact,")
-                print("      permanently. The content changed, so the version must")
-                print("      be bumped: edit VERSION, then run dist again.")
-                print()
-                print("      Do not delete the RELEASES.md entry to get past this.")
-                print("      That is how v0.9.3 came to name two different artifacts.")
-                return 1
-            # Reproducible, so an unchanged rebuild agrees by construction.
-            os.replace(staged, tarball)
-            staged = ""
-            print(f"dist: v{version} already recorded and unchanged — no-op")
-            print(f"  sha256 {artifact}")
-            return 0
-
-        os.replace(staged, tarball)
+        os.chmod(staged, os.stat(path).st_mode if os.path.exists(path) else 0o644)
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            fd = -1
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(staged, path)
         staged = ""
-        append_release(version, tree, artifact, git_commit())
-        print(f"dist: {name}.tar.gz")
-        print(f"  tree     {tree}")
-        print(f"  sha256   {artifact}")
-        print(f"  recorded in {RELEASES}")
-        print("\n  Recipient runs first:")
-        print(f"    tar -xzf {name}.tar.gz && cd {name} && python build.py verify-drop")
-        return 0
     finally:
+        if fd >= 0:
+            os.close(fd)
         if staged and os.path.exists(staged):
             os.remove(staged)
 
 
-def release_check() -> int:
-    """Re-derive every recorded release that can be re-derived, and report drift.
+def _copy_release_source(dest: str) -> None:
+    """Copy release inputs with normalized timestamps and permissions."""
+    os.makedirs(dest)
+    for dirpath, dirnames, filenames in os.walk(HERE):
+        rel_dir = os.path.relpath(dirpath, HERE).replace(os.sep, "/")
+        rel_dir = "" if rel_dir == "." else rel_dir
+        dirnames[:] = sorted(
+            d for d in dirnames
+            if not _excluded(f"{rel_dir}/{d}".lstrip("/"))
+        )
+        target_dir = os.path.join(dest, *rel_dir.split("/")) if rel_dir else dest
+        os.makedirs(target_dir, exist_ok=True)
+        for filename in sorted(filenames):
+            rel = f"{rel_dir}/{filename}".lstrip("/")
+            if _excluded(rel):
+                continue
+            target = os.path.join(dest, *rel.split("/"))
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            shutil.copyfile(os.path.join(dirpath, filename), target)
+            os.chmod(target, 0o644)
+            os.utime(target, (SOURCE_EPOCH, SOURCE_EPOCH))
+    for dirpath, dirnames, _ in os.walk(dest, topdown=False):
+        for dirname in dirnames:
+            directory = os.path.join(dirpath, dirname)
+            os.chmod(directory, 0o755)
+            os.utime(directory, (SOURCE_EPOCH, SOURCE_EPOCH))
+    os.chmod(dest, 0o755)
+    os.utime(dest, (SOURCE_EPOCH, SOURCE_EPOCH))
 
-    Exits nonzero only for a published file whose bytes changed. A tarball that
-    is simply absent is informational — older artifacts legitimately live in
-    ../archives/ rather than in the tree. A working tree that has moved past the
-    last release is also normal, and reporting it as a failure would break every
-    ordinary `build.py` run made between releases.
-    """
-    entries = read_releases()
+
+def _release_requirements() -> dict[str, str]:
+    path = os.path.join(HERE, "requirements-release.txt")
+    required: dict[str, str] = {}
+    for raw in open(path, encoding="utf-8"):
+        line = raw.partition("#")[0].strip()
+        if not line:
+            continue
+        match = re.fullmatch(r"([A-Za-z0-9_.-]+)==([^\s]+)", line)
+        if not match:
+            raise ValueError(f"{path}: release tools must use exact == pins: {line!r}")
+        required[match.group(1).lower()] = match.group(2)
+    return required
+
+
+def _check_release_python(executable: str) -> tuple[bool, str]:
+    probe = """\
+import importlib.metadata
+import json
+import sys
+
+bad = []
+for package, expected in json.loads(sys.argv[1]).items():
+    try:
+        actual = importlib.metadata.version(package)
+    except importlib.metadata.PackageNotFoundError:
+        actual = "not installed"
+    if actual != expected:
+        bad.append(f"{package}=={expected} (found {actual})")
+print("\\n".join(bad))
+sys.exit(1 if bad else 0)
+"""
+    try:
+        process = subprocess.run(
+            [executable, "-c", probe, json.dumps(_release_requirements(), sort_keys=True)],
+            cwd=tempfile.gettempdir(), capture_output=True, text=True,
+        )
+    except OSError as exc:
+        return False, str(exc)
+    return process.returncode == 0, (process.stdout or "") + (process.stderr or "")
+
+
+def _metadata_version(path: str) -> str:
+    if path.endswith(".whl"):
+        with zipfile.ZipFile(path) as archive:
+            names = [name for name in archive.namelist() if name.endswith(".dist-info/METADATA")]
+            if len(names) != 1:
+                raise ValueError(f"{path}: expected one wheel METADATA, found {len(names)}")
+            text = archive.read(names[0]).decode("utf-8")
+    else:
+        with tarfile.open(path, "r:gz") as archive:
+            members = [
+                member for member in archive.getmembers()
+                if member.name.endswith("/PKG-INFO") and member.name.count("/") == 1
+            ]
+            if len(members) != 1:
+                raise ValueError(f"{path}: expected one sdist PKG-INFO, found {len(members)}")
+            extracted = archive.extractfile(members[0])
+            if extracted is None:
+                raise ValueError(f"{path}: PKG-INFO is unreadable")
+            text = extracted.read().decode("utf-8")
+    match = re.search(r"^Version: (.+)$", text, re.MULTILINE)
+    if not match:
+        raise ValueError(f"{path}: package metadata has no Version")
+    return match.group(1).strip()
+
+
+def _normalize_sdist(path: str) -> None:
+    """Canonicalize backend-created tar/gzip metadata without changing files."""
+    members: list[tuple[tarfile.TarInfo, bytes | None]] = []
+    with tarfile.open(path, "r:gz") as source:
+        for original in source.getmembers():
+            member = copy.copy(original)
+            extracted = source.extractfile(original) if original.isreg() else None
+            members.append((member, extracted.read() if extracted is not None else None))
+
+    normalized = path + ".normalized"
+    try:
+        with open(normalized, "wb") as raw:
+            with gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as gz:
+                with tarfile.open(fileobj=gz, mode="w", format=tarfile.GNU_FORMAT) as archive:
+                    for member, data in members:
+                        member.pax_headers = {}
+                        _normalize(member)
+                        if data is None:
+                            archive.addfile(member)
+                        else:
+                            archive.addfile(member, io.BytesIO(data))
+        os.replace(normalized, path)
+    finally:
+        if os.path.exists(normalized):
+            os.remove(normalized)
+
+
+def _build_python_artifacts(output_dir: str, version: str) -> tuple[str, str]:
+    executable = os.environ.get("SK_RELEASE_PYTHON", PY)
+    ok, detail = _check_release_python(executable)
+    if not ok:
+        raise RuntimeError(
+            "release Python does not match requirements-release.txt:\n"
+            + detail.strip()
+            + "\nCreate a release venv, install -r requirements-release.txt, then set "
+              "SK_RELEASE_PYTHON to that venv's Python."
+        )
+    with tempfile.TemporaryDirectory(prefix="solomons-key-source-") as temp:
+        source = os.path.join(temp, "source")
+        _copy_release_source(source)
+        env = os.environ.copy()
+        env["SOURCE_DATE_EPOCH"] = str(SOURCE_EPOCH)
+        env["PYTHONHASHSEED"] = "0"
+        process = subprocess.run(
+            [executable, "-m", "build", "--sdist", "--wheel", "--no-isolation",
+             "--outdir", output_dir, source],
+            cwd=temp, env=env, capture_output=True, text=True,
+        )
+        if process.returncode:
+            raise RuntimeError((process.stdout or "") + (process.stderr or ""))
+    sdists = sorted(
+        os.path.join(output_dir, name) for name in os.listdir(output_dir)
+        if name.endswith(".tar.gz")
+    )
+    wheels = sorted(
+        os.path.join(output_dir, name) for name in os.listdir(output_dir)
+        if name.endswith(".whl")
+    )
+    if len(sdists) != 1 or len(wheels) != 1:
+        raise RuntimeError(
+            f"package build produced {len(sdists)} sdist(s) and {len(wheels)} wheel(s)"
+        )
+    _normalize_sdist(sdists[0])
+    for artifact in (sdists[0], wheels[0]):
+        metadata_version = _metadata_version(artifact)
+        if metadata_version != version:
+            raise RuntimeError(
+                f"{os.path.basename(artifact)} records version {metadata_version!r}; "
+                f"VERSION records {version!r}"
+            )
+    return sdists[0], wheels[0]
+
+
+def _artifact_paths(version: str) -> dict[str, str]:
+    package_stem = f"solomons_key-{version}"
+    return {
+        "tarball": os.path.join(HERE, f"solomons-key-v{version}.tar.gz"),
+        "sdist": os.path.join(HERE, "dist", f"{package_stem}.tar.gz"),
+        "wheel": os.path.join(HERE, "dist", f"{package_stem}-py3-none-any.whl"),
+    }
+
+
+def dist() -> int:
+    try:
+        version = read_version()
+        entries = read_releases()
+    except (OSError, ValueError) as exc:
+        print(f"dist: {exc}")
+        return 1
+    name = f"solomons-key-v{version}"
+    final_paths = _artifact_paths(version)
+
+    with tempfile.TemporaryDirectory(prefix=f"{name}-release-") as stage:
+        staged_paths = {"tarball": os.path.join(stage, f"{name}.tar.gz")}
+        try:
+            _pack(staged_paths["tarball"], name)
+            package_dir = os.path.join(stage, "dist")
+            os.makedirs(package_dir)
+            staged_paths["sdist"], staged_paths["wheel"] = _build_python_artifacts(
+                package_dir, version
+            )
+        except (OSError, ValueError, RuntimeError) as exc:
+            print(f"dist: package build failed: {exc}")
+            return 1
+
+        hashes = {kind: sha256_file(path) for kind, path in staged_paths.items()}
+        tree = tree_hash()
+        if not re.fullmatch(r"[0-9a-f]{64}", tree):
+            print("dist: could not derive a valid governed tree hash; nothing recorded")
+            return 1
+        recorded = entries.get(version)
+
+        if recorded:
+            if recorded["legacy"]:
+                print(f"dist: REFUSING to extend legacy v{version} after it was recorded")
+                print("      Adding sdist and wheel hashes later would mutate its identity.")
+                print("      Bump VERSION and cut one complete release set instead.")
+                return 1
+            identities = {
+                "tree": (recorded["tree"], tree),
+                **{kind: (recorded[kind], hashes[kind]) for kind in staged_paths},
+            }
+            changed = {kind: pair for kind, pair in identities.items() if pair[0] != pair[1]}
+            if changed:
+                print(f"dist: REFUSING to re-cut v{version} — it is already recorded")
+                print(f"      in {RELEASES} with different content.\n")
+                for kind, (old, new) in changed.items():
+                    print(f"      recorded {kind:<8} {old}")
+                    print(f"      current  {kind:<8} {new}")
+                print("\n      A version name resolves to exactly one release set,")
+                print("      permanently. Some content changed, so VERSION must be bumped.")
+                return 1
+
+        os.makedirs(os.path.join(HERE, "dist"), exist_ok=True)
+        for kind, staged_path in staged_paths.items():
+            os.replace(staged_path, final_paths[kind])
+
+        if recorded:
+            print(f"dist: v{version} already recorded and unchanged — no-op")
+        else:
+            try:
+                append_release_set(
+                    version, tree, hashes["tarball"], hashes["sdist"],
+                    hashes["wheel"], git_commit(),
+                )
+            except (OSError, ValueError) as exc:
+                print(f"dist: built artifacts but did not record them: {exc}")
+                return 1
+            print(f"dist: recorded immutable v{version} release set in {RELEASES}")
+        print(f"  tree     {tree}")
+        for kind in ("tarball", "sdist", "wheel"):
+            print(f"  {kind:<8} {hashes[kind]}  {os.path.relpath(final_paths[kind], HERE)}")
+        return 0
+
+
+def release_check() -> int:
+    """Verify every locally present artifact against its recorded release set."""
+    try:
+        entries = read_releases()
+        version = read_version()
+    except (OSError, ValueError) as exc:
+        print(f"release-check: {exc}")
+        return 1
     if not entries:
         print(f"release-check: no releases recorded in {RELEASES} yet")
         return 0
 
-    version = open(os.path.join(HERE, "VERSION"), encoding="utf-8").read().strip()
     mismatches = 0
     print(f"release-check: {len(entries)} recorded release(s)")
-    for v in sorted(entries):
-        rec = entries[v]
-        path = os.path.join(HERE, f"solomons-key-v{v}.tar.gz")
-        if not os.path.exists(path):
-            print(f"  v{v}  tarball not present — not checked")
-            continue
-        actual = sha256_file(path)
-        if actual == rec["artifact"]:
-            print(f"  v{v}  artifact matches  {actual[:12]}…")
-        else:
-            mismatches += 1
-            print(f"  v{v}  ARTIFACT MISMATCH")
-            print(f"        recorded {rec['artifact']}")
-            print(f"        actual   {actual}")
+    for release_version in sorted(entries):
+        record = entries[release_version]
+        paths = _artifact_paths(release_version)
+        kinds = ("tarball",) if record["legacy"] else ("tarball", "sdist", "wheel")
+        for kind in kinds:
+            path = paths[kind]
+            if not os.path.exists(path):
+                print(f"  v{release_version}  {kind} not present — not checked")
+                continue
+            actual = sha256_file(path)
+            if actual == record[kind]:
+                print(f"  v{release_version}  {kind} matches  {actual[:12]}…")
+            else:
+                mismatches += 1
+                print(f"  v{release_version}  {kind.upper()} MISMATCH")
+                print(f"        recorded {record[kind]}")
+                print(f"        actual   {actual}")
 
     if version in entries:
         actual_tree = tree_hash()
@@ -432,7 +695,7 @@ def release_check() -> int:
             print(f"  v{version}  tree matches the working tree")
         else:
             print(f"  v{version}  tree has moved since the release — expected between")
-            print(f"        releases; bump VERSION before cutting again")
+            print("        releases; bump VERSION before cutting again")
             print(f"        recorded {entries[version]['tree']}")
             print(f"        actual   {actual_tree}")
     else:
@@ -440,7 +703,7 @@ def release_check() -> int:
 
     if mismatches:
         print(f"\nrelease-check: {mismatches} published artifact(s) no longer match")
-        print("  the hash recorded for them. A released file changed on disk.")
+        print("  the immutable release set recorded for them.")
         return 1
     print("release-check: no drift")
     return 0
@@ -463,7 +726,7 @@ def actual_counts() -> dict[str, int]:
 
     tests = 0
     for suite in ("test_sk_lint.py", "test_sk_ledger.py", "test_sk_artifacts.py",
-                  "test_sk_verify.py", "test_sk_emit.py"):
+                  "test_sk_verify.py", "test_sk_emit.py", "test_ci_flow.py"):
         if os.path.exists(os.path.join(HERE, suite)):
             _, o = run([suite], capture=True)
             m = re.search(r"(\d+) passed, (\d+) failed", o)
@@ -508,7 +771,8 @@ def docs(write: bool = False) -> int:
         if text[i:j] != block:
             drifted.append((doc, text[i:j]))
             if write:
-                open(path, "w", encoding="utf-8").write(text[:i] + block + text[j:])
+                with open(path, "w", encoding="utf-8", newline="\n") as fh:
+                    fh.write(text[:i] + block + text[j:])
 
     if missing:
         for d in missing:
@@ -548,6 +812,7 @@ TARGETS: dict[str, list] = {
         Step("test_sk_ledger", ["test_sk_ledger.py"]),
         Step("test_sk_artifacts", ["test_sk_artifacts.py"]),
         Step("test_sk_verify", ["test_sk_verify.py"]),
+        Step("test_ci_flow", ["test_ci_flow.py"]),
     ],
     "test-emit": [Step("test_sk_emit", ["test_sk_emit.py"])],
     "test-release": [Step("test_sk_release", ["test_sk_release.py"])],

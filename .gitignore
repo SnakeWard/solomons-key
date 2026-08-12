@@ -19,12 +19,14 @@ runs/real/
 
 # Release artifacts belong on the Releases page, not in the tree.
 *.tar.gz
+*.whl
 *.zip
 
 # --- Python ------------------------------------------------------------
 __pycache__/
 *.py[cod]
 .venv/
+.venv-release/
 venv/
 *.egg-info/
 build/

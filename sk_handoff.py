@@ -43,8 +43,8 @@ import sys
 # Files under governance. Generated corpora are excluded deliberately: they are
 # reproducible from their generators, and pinning them would make every
 # regeneration look like tampering.
-GOVERNED_SUFFIXES = (".py", ".yaml", ".yml", ".md", ".json", ".jsonl")
-GOVERNED_NAMES = ("Makefile",)
+GOVERNED_SUFFIXES = (".py", ".yaml", ".yml", ".md", ".json", ".jsonl", ".toml", ".txt")
+GOVERNED_NAMES = ("Makefile", "VERSION")
 
 EXCLUDE_DIRS = {
     "__pycache__", ".git", ".github",
@@ -120,7 +120,8 @@ def cmd_pin(args) -> int:
     if args.out == "-":
         sys.stdout.write(text)
     else:
-        open(args.out, "w", encoding="utf-8").write(text)
+        with open(args.out, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(text)
         print(f"sk-handoff: pinned {len(manifest)} files -> {args.out}")
     print(f"  tree_sha256 {tree_hash}")
     return 0

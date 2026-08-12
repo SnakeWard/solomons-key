@@ -1,27 +1,36 @@
 # Releases
 
-One version name resolves to exactly one artifact, permanently. This file is the record that
-makes that checkable, and `build.py dist` refuses to re-cut a version recorded here with
-different content.
+One version name resolves to exactly one release set, permanently. `build.py dist` builds every
+member before recording one row and refuses to re-cut any recorded version if even one digest
+changes.
 
-Each release carries **two** digests, because they answer different questions:
+Current release rows carry four SHA-256 digests:
 
-- **Tree hash** — `python sk_handoff.py hash`. What state was released. Anyone can recompute it
-  from the source and get the same answer.
-- **Artifact hash** — SHA-256 of the shipped `.tar.gz`. What file was published.
+- **Tree hash** — `python sk_handoff.py hash`; the governed source state.
+- **Drop tarball** — the complete `solomons-key-v*.tar.gz` verification drop.
+- **Python sdist** — the `dist/solomons_key-*.tar.gz` source distribution.
+- **Python wheel** — the `dist/solomons_key-*-py3-none-any.whl` wheel.
 
-`dist` is reproducible, so for any given release these are two views of one fact: rebuilding the
-recorded tree must reproduce the recorded artifact byte for byte. A divergence between them is
-therefore a real signal, not noise, and `python build.py release-check` looks for it.
+All three files are one identity. A version cannot record one file now and acquire the other two
+later. `python build.py release-check` verifies every locally present member against the same row.
 
 `RELEASES.md` is excluded from both the tree hash and the tarball. It records digests over
 content, so it cannot be inside the content it describes — the same self-reference that keeps
 the tree pin out of `TREE.sha256`'s own manifest.
 
-> **Editing note.** A line carrying a version and **two** full 64-hex digests is parsed as a
-> release entry, by `build.py` and by `test_sk_release.py` alike. Notes about superseded or
-> skipped versions below quote at most one full digest per line, deliberately, so that an
-> abandoned name is never read back as a release.
+> **Editing note.** A release-set row has exactly four full 64-hex digests. Historical rows have
+> exactly two and remain valid but cannot be extended. Three-digest rows fail closed as partial
+> identities. Notes below quote at most one full digest per line so they cannot become releases.
+
+## Immutable release sets
+
+| Version | Tree hash | Drop tarball | Python sdist | Python wheel | Commit | Status |
+|---|---|---|---|---|---|---|
+<!-- release-sets:end -->
+
+## Legacy release identities
+
+These pre-package-publication rows permanently retain their original tree and drop-tarball hashes.
 
 | Version | Tree hash | Artifact hash | Commit | Status |
 |---|---|---|---|---|
