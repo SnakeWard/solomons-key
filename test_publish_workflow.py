@@ -122,7 +122,10 @@ def main() -> int:
         "manual_recovery_verifies_and_installs_exact_recorded_bytes",
         "build.py verify-drop release-check" in build_commands
         and "twine check --strict" in build_commands
-        and ".workflow-source/test_release_artifact.py" in build_commands,
+        and "RUNNER_TEMP" in build_commands
+        and "test_release_artifact.py" in build_commands
+        and "shutil.rmtree(source)" in build_commands
+        and 'shutil.rmtree(Path(".workflow-source"))' in build_commands,
     )
     check(
         "only_sdist_and_wheel_are_handed_to_publisher",

@@ -88,11 +88,14 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
+          import os
           from pathlib import Path
           import shutil
 
           version = Path("VERSION").read_text(encoding="utf-8").strip()
           source = Path(".release-assets")
+          verifier_source = Path(".workflow-source/test_release_artifact.py")
+          verifier = Path(os.environ["RUNNER_TEMP"]) / "test_release_artifact.py"
           Path("dist").mkdir(exist_ok=True)
           for relative in (
               f"solomons-key-v{version}.tar.gz",
@@ -100,10 +103,13 @@ jobs:
               f"dist/solomons_key-{version}-py3-none-any.whl",
           ):
               shutil.copyfile(source / relative, relative)
+          shutil.copyfile(verifier_source, verifier)
+          shutil.rmtree(source)
+          shutil.rmtree(Path(".workflow-source"))
           PY
           python build.py verify-drop release-check
           python -m twine check --strict dist/*.tar.gz dist/*.whl
-          python .workflow-source/test_release_artifact.py .
+          PYTHONPATH=. python "${RUNNER_TEMP}/test_release_artifact.py" .
 
       - name: Stage only Python distribution artifacts
         shell: bash
