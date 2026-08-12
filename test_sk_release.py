@@ -142,6 +142,40 @@ def main() -> int:
             output.strip(),
         )
 
+        promotion_probe = r"""
+import errno
+import os
+import tempfile
+import build
+
+with tempfile.TemporaryDirectory() as temp:
+    source_dir = os.path.join(temp, "source-filesystem")
+    destination_dir = os.path.join(temp, "destination-filesystem")
+    os.makedirs(source_dir)
+    os.makedirs(destination_dir)
+    staged = os.path.join(source_dir, "artifact.whl")
+    final = os.path.join(destination_dir, "artifact.whl")
+    payload = b"immutable release bytes\n"
+    open(staged, "wb").write(payload)
+
+    real_replace = build.os.replace
+    def reject_cross_filesystem_replace(source, destination):
+        if os.path.dirname(os.path.abspath(source)) != os.path.dirname(os.path.abspath(destination)):
+            raise OSError(errno.EXDEV, "simulated cross-filesystem replace")
+        return real_replace(source, destination)
+
+    build.os.replace = reject_cross_filesystem_replace
+    build._promote_artifact(staged, final)
+    assert open(final, "rb").read() == payload
+print("cross-filesystem promotion passed")
+"""
+        rc, output = run(["-c", promotion_probe], work)
+        check(
+            "cross_filesystem_artifact_promotion_is_atomic",
+            rc == 0 and output.strip() == "cross-filesystem promotion passed",
+            output.strip()[-500:],
+        )
+
         rc, first_output = run(["build.py", "dist"], work)
         paths = {
             "tarball": os.path.join(work, f"solomons-key-v{version}.tar.gz"),

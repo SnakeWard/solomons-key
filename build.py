@@ -585,6 +585,37 @@ def _artifact_paths(version: str) -> dict[str, str]:
     }
 
 
+def _promote_artifact(staged_path: str, final_path: str) -> None:
+    """Atomically publish one staged artifact across filesystem boundaries.
+
+    ``os.replace(staged_path, final_path)`` is atomic only when both paths are
+    on the same filesystem. On Windows, the system temporary directory and the
+    checkout commonly live on different drives. Copy first to a temporary file
+    beside the destination, flush it, then use the same-filesystem replace for
+    the final atomic step.
+    """
+    destination_dir = os.path.dirname(final_path) or HERE
+    os.makedirs(destination_dir, exist_ok=True)
+    fd, destination_stage = tempfile.mkstemp(
+        prefix=f".{os.path.basename(final_path)}.",
+        suffix=".tmp",
+        dir=destination_dir,
+    )
+    try:
+        with os.fdopen(fd, "wb") as destination, open(staged_path, "rb") as source:
+            fd = -1
+            shutil.copyfileobj(source, destination)
+            destination.flush()
+            os.fsync(destination.fileno())
+        os.replace(destination_stage, final_path)
+        destination_stage = ""
+    finally:
+        if fd >= 0:
+            os.close(fd)
+        if destination_stage and os.path.exists(destination_stage):
+            os.remove(destination_stage)
+
+
 def dist() -> int:
     try:
         version = read_version()
@@ -638,7 +669,7 @@ def dist() -> int:
 
         os.makedirs(os.path.join(HERE, "dist"), exist_ok=True)
         for kind, staged_path in staged_paths.items():
-            os.replace(staged_path, final_paths[kind])
+            _promote_artifact(staged_path, final_paths[kind])
 
         if recorded:
             print(f"dist: v{version} already recorded and unchanged — no-op")
