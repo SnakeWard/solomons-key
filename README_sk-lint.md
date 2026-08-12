@@ -4,7 +4,7 @@ A structural verifier for Solomon's Key KEY files.
 
 **A gate is real if and only if you have seen it fail on an input constructed to make it fail, and the failure was produced by a program rather than by a model's judgment.**
 
-`sk-lint` is the first thing in Solomon's Key that meets that bar. It reads a KEY file and decides pass/fail by program. No model is in the loop. Twenty-two rules, each with a committed red-corpus fixture proving it discriminates.
+`sk-lint` is the first thing in Solomon's Key that meets that bar. It reads a KEY file and decides pass/fail by program. No model is in the loop. Every rule has a committed red-corpus fixture proving it discriminates.
 
 <!-- counts:begin -->
 **23** lint rules · **19** run rules · **13** semantic rules · **138** tests passing
@@ -55,21 +55,21 @@ See `FINDINGS.md` for the full report and the open items the repair pass deliber
 
 | File | Role |
 |---|---|
-| `sk_lint.py` | The verifier. 22 rules, no dependencies beyond PyYAML. |
+| `sk_lint.py` | The structural verifier, with no dependency beyond PyYAML. |
 | `repair_pass.py` | Closes the 6 errors by surgical string edit. Never round-trips YAML, so comments and ordering survive. Every edit is declared in source and fails loudly if its anchor does not match exactly once. |
 | `gen_redcorpus.py` | Generates one deliberately-invalid fixture per rule from the green baseline. |
 | `test_sk_lint.py` | The judge. Green passes; every red fixture trips its bound rule; every rule has a fixture. |
 | `key.yaml` | The KEY file as it stands today. Lints with 6 errors. |
 | `key.repaired.yaml` | Output of the repair pass. Lints with 0 errors. |
-| `redcorpus/` | 22 fixtures + `manifest.json` binding each to its rule. |
+| `redcorpus/` | Deliberately invalid fixtures plus `manifest.json`, binding each fixture to the rule it must trip. |
 | `sk_ledger.py` | Hash-chained append-only witness ledger. `init`, `seed`, `append`, `verify`, `head`. |
 | `test_sk_ledger.py` | Seven tamper shapes. Five must be caught; two must not be, without an anchor. |
 | `ledger/` | Ledger seeded from the KEY file's own 18-pass history, plus the committed `HEAD` anchor. |
-| `sk_verify.py` | The judge. 15 rules over a completed run directory. |
-| `gen_runs.py` | One conforming run, 17 violating runs bound to the rules they must trip. |
+| `sk_verify.py` | The judge over a completed run directory. |
+| `gen_runs.py` | One conforming run plus violating runs bound to the rules they must trip. |
 | `test_sk_verify.py` | Good run conforms; every bad run convicted; bypass rules fire at CRITICAL. |
 | `runs/` | Generated run corpus. |
-| `.github/workflows/sk-lint.yml` | CI: two jobs. Structure (corpus reproducible, rules discriminate, KEY lints clean) and witness (tamper detection works, chain matches anchor, prior entries byte-identical to the previous commit). |
+| `.github/workflows/sk-lint.yml` | CI for reproducibility, discrimination, run conformance, schema validation, and append-only ledger integrity. |
 
 ## The rule that matters most
 
@@ -167,6 +167,6 @@ One severity call was also wrong. RUN07 (a decision recorded for a gate the rout
 
 ## Scope
 
-`sk-lint` verifies the KEY file's internal structure. `sk-ledger` verifies the witness. Neither verifies a *run*. That is `sk-verify`, which needs JSON Schemas for all 17 artifacts first.
+`sk-lint` verifies the KEY file's internal structure. `sk-ledger` verifies the witness. `sk-artifacts` validates evidence against the generated schemas, and `sk-verify` judges a completed run against all three.
 
-Neither can check whether a judgment was *correct* — only whether the structure carrying it is sound. Gate criteria are still prose (`artifact_requirement_gate` confirms artifacts "exist and are valid"; *valid* is undefined). Closing that is the artifact-schema work, and it is the next real lift.
+The stack cannot prove that an attested judgment was correct, or that a trusted executable was itself honest. It proves that the recorded evidence has the declared shape, came from the pinned executable when claimed as program-produced, is bound to the witnessed run, and satisfies the contract's enforceable rules. `TRUST_BOUNDARY.md` states the remaining assumptions explicitly.
