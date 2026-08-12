@@ -197,4 +197,6 @@ Beta tags matching `vX.Y.ZaN`, `vX.Y.ZbN`, or `vX.Y.ZrcN` invoke the dedicated
 TestPyPI workflow. Its build job proves the recorded release set before handing
 only the sdist and wheel to an isolated `testpypi` environment. The publishing
 job receives a short-lived OIDC identity and has no repository write permission
-or stored API token.
+or stored API token. A manual dispatch accepts one existing prerelease tag only
+as a recovery path: it checks out that immutable tag and repeats the same gates;
+it cannot rename the release or move the tag.

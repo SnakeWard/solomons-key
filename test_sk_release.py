@@ -213,6 +213,20 @@ print("cross-filesystem promotion passed")
         check("wheel_metadata_matches_VERSION", metadata_version(paths["wheel"]) == version)
 
         with zipfile.ZipFile(paths["wheel"]) as archive:
+            canonical_timestamp = (2023, 11, 14, 22, 13, 20)
+            canonical_metadata = all(
+                info.create_system == 3
+                and info.compress_type == zipfile.ZIP_STORED
+                and info.date_time == canonical_timestamp
+                and ((info.external_attr >> 16) & 0xFFFF)
+                == (0o40755 if info.filename.endswith("/") else 0o100644)
+                for info in archive.infolist()
+            )
+            check(
+                "wheel_metadata_is_platform_neutral",
+                canonical_metadata,
+                "wheel contains platform-dependent ZIP metadata",
+            )
             wheel_names = set(archive.namelist())
             packaged_modules = {f"{module}.py" for module in declared_modules}
             check(

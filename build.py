@@ -32,10 +32,12 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -530,6 +532,41 @@ def _normalize_sdist(path: str) -> None:
             os.remove(normalized)
 
 
+def _normalize_wheel(path: str) -> None:
+    """Rewrite a wheel with platform-neutral ZIP metadata and bytes.
+
+    ZIP creator systems and permission bits differ between Windows and POSIX,
+    and deflate output can differ between zlib builds. Wheels do not require
+    compression, so store sorted members with fixed timestamps, Unix modes,
+    and no comments or extra fields. RECORD hashes member contents rather than
+    ZIP metadata, so the signed package inventory remains valid.
+    """
+    members: list[tuple[str, bytes]] = []
+    with zipfile.ZipFile(path, "r") as source:
+        for info in source.infolist():
+            members.append((info.filename, source.read(info.filename)))
+
+    normalized = path + ".normalized"
+    timestamp = time.gmtime(SOURCE_EPOCH)[:6]
+    try:
+        with zipfile.ZipFile(normalized, "w", compression=zipfile.ZIP_STORED) as archive:
+            for name, data in sorted(members):
+                info = zipfile.ZipInfo(name, timestamp)
+                info.create_system = 3
+                info.compress_type = zipfile.ZIP_STORED
+                info.comment = b""
+                info.extra = b""
+                if name.endswith("/"):
+                    info.external_attr = ((stat.S_IFDIR | 0o755) << 16) | 0x10
+                else:
+                    info.external_attr = (stat.S_IFREG | 0o644) << 16
+                archive.writestr(info, data)
+        os.replace(normalized, path)
+    finally:
+        if os.path.exists(normalized):
+            os.remove(normalized)
+
+
 def _build_python_artifacts(output_dir: str, version: str) -> tuple[str, str]:
     executable = os.environ.get("SK_RELEASE_PYTHON", PY)
     ok, detail = _check_release_python(executable)
@@ -566,6 +603,7 @@ def _build_python_artifacts(output_dir: str, version: str) -> tuple[str, str]:
             f"package build produced {len(sdists)} sdist(s) and {len(wheels)} wheel(s)"
         )
     _normalize_sdist(sdists[0])
+    _normalize_wheel(wheels[0])
     for artifact in (sdists[0], wheels[0]):
         metadata_version = _metadata_version(artifact)
         if metadata_version != version:

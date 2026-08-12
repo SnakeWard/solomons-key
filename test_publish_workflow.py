@@ -34,11 +34,20 @@ def main() -> int:
 
     tags = ((trigger.get("push") or {}).get("tags") or [])
     check(
-        "only_prerelease_tags_trigger_publish",
-        set(trigger) == {"push"}
+        "only_prerelease_tags_or_explicit_recovery_publish",
+        set(trigger) == {"push", "workflow_dispatch"}
         and len(tags) == 3
         and all(tag.startswith("v[0-9]+.[0-9]+.[0-9]+") for tag in tags),
         f"on={trigger}",
+    )
+    dispatch_inputs = (trigger.get("workflow_dispatch") or {}).get("inputs") or {}
+    release_input = dispatch_inputs.get("release_tag") or {}
+    check(
+        "manual_recovery_requires_one_existing_tag",
+        set(dispatch_inputs) == {"release_tag"}
+        and release_input.get("required") == "true"
+        and release_input.get("type") == "string",
+        f"workflow_dispatch={trigger.get('workflow_dispatch')}",
     )
     check(
         "workflow_has_no_ambient_permissions",
@@ -67,10 +76,36 @@ def main() -> int:
         f"needs={publish.get('needs')}",
     )
 
+    build_env = build.get("env") or {}
+    release_tag_expression = str(build_env.get("RELEASE_TAG") or "")
+    checkout_config = next(
+        (step.get("with") or {} for step in build_steps
+         if str(step.get("uses") or "").startswith("actions/checkout@")),
+        {},
+    )
+    setup_config = next(
+        (step.get("with") or {} for step in build_steps
+         if str(step.get("uses") or "").startswith("actions/setup-python@")),
+        {},
+    )
+    runner = str(build.get("runs-on") or "")
+    check(
+        "manual_recovery_is_tag_bound_and_platform_exact",
+        "inputs.release_tag" in release_tag_expression
+        and "github.ref_name" in release_tag_expression
+        and "env.RELEASE_TAG" in str(checkout_config.get("ref") or "")
+        and "windows-latest" in runner
+        and "ubuntu-latest" in runner
+        and "3.14.0" in str(setup_config.get("python-version") or ""),
+        f"env={build_env}, checkout={checkout_config}, runner={runner}, setup={setup_config}",
+    )
+
     build_commands = "\n".join(str(step.get("run") or "") for step in build_steps)
     check(
         "tag_must_equal_version",
-        "GITHUB_REF_NAME" in build_commands and "VERSION" in build_commands,
+        "RELEASE_TAG" in build_commands
+        and "VERSION" in build_commands
+        and "re.fullmatch" in build_commands,
     )
     check(
         "distribution_acceptance_is_mandatory",
