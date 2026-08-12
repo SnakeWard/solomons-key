@@ -131,6 +131,8 @@ jobs:
         env:
           SK_RELEASE_PYTHON: python
         run: python test_sk_release.py
+      - name: TestPyPI publishing workflow is least-privilege and fail-closed
+        run: python test_publish_workflow.py
       - name: Reproducible build and installed-distribution acceptance
         env:
           SK_RELEASE_PYTHON: python

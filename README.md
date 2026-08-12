@@ -192,3 +192,9 @@ outside the checkout, and exercises the installed
 release record or create live release artifacts. `VERSION` is the only version source;
 `pyproject.toml` reads it dynamically. `dist` records the governed tree, drop
 tarball, Python sdist, and wheel hashes together as one immutable release set.
+
+Beta tags matching `vX.Y.ZaN`, `vX.Y.ZbN`, or `vX.Y.ZrcN` invoke the dedicated
+TestPyPI workflow. Its build job proves the recorded release set before handing
+only the sdist and wheel to an isolated `testpypi` environment. The publishing
+job receives a short-lived OIDC identity and has no repository write permission
+or stored API token.

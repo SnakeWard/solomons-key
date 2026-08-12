@@ -818,6 +818,7 @@ TARGETS: dict[str, list] = {
     "test-emit": [Step("test_sk_emit", ["test_sk_emit.py"])],
     "test-release": [Step("test_sk_release", ["test_sk_release.py"])],
     "acceptance": [Step("test_sk_acceptance", ["test_sk_acceptance.py"])],
+    "test-publish": [Step("test_publish_workflow", ["test_publish_workflow.py"])],
     "lint": [Step("lint", ["sk_lint.py", KEY])],
     "artifacts": [Step("artifacts", ["sk_artifacts.py", "validate", "--dir", "examples/valid",
                                      "--key", KEY, "--ledger", LEDGER])],
@@ -839,7 +840,7 @@ TARGETS: dict[str, list] = {
 }
 
 ALL = ["repair", "ledger", "schemas", "examples", "corpus", "runs", "emit",
-       "test", "test-emit", "lint", "artifacts", "verify", "ledger-verify",
+       "test", "test-emit", "test-publish", "lint", "artifacts", "verify", "ledger-verify",
        "docs", "pin", "release-check"]
 
 
