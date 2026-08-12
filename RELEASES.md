@@ -26,6 +26,7 @@ the tree pin out of `TREE.sha256`'s own manifest.
 
 | Version | Tree hash | Drop tarball | Python sdist | Python wheel | Commit | Status |
 |---|---|---|---|---|---|---|
+| v0.10.2b1 | `885c4cc593efd79710dbd5af7c313773fc9b431046da29e20795a9ca82b0070f` | `7bc3b9c9697c6eebb7b11e6beed2973f741393bc3e0b4da87a28a4bc0e5799a4` | `cd44fb50dca0d9f3014106bcb97ef761e59641b4fd90c8953e397f1afb5d6909` | `1c6a36b3389eef1446f0b678b001ecaf4601d27caea4f992f231a847f471003a` | `5659e6acd995875da48636564ea7baf2869761f6` | released |
 <!-- release-sets:end -->
 
 ## Legacy release identities
