@@ -1,0 +1,10 @@
+{
+  "payload": "e30=",
+  "payloadType": "application/vnd.in-toto.provenance+json",
+  "signatures": [
+    {
+      "keyid": "unsigned",
+      "sig": ""
+    }
+  ]
+}

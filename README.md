@@ -117,8 +117,13 @@ shape and rejects malformed or incomplete input. It does **not** replace
 the trust root. `TRUSTED_PROGRAMS.sha256` and the existing emitters remain
 the root of trust. Claim size: `TRUST_BOUNDARY.md`.
 
+Pass `--dsse` to wrap the Statement in an unsigned DSSE envelope
+(`application/vnd.in-toto+json`); consume unwraps it. Structural only —
+signatures are not verified.
+
 ```bash
 python -m solomons_key.in_toto emit runs/good -o statement.json
+python -m solomons_key.in_toto emit runs/good --dsse -o envelope.json
 python -m solomons_key.in_toto consume statement.json
 ```
 

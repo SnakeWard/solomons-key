@@ -10,6 +10,7 @@ import json
 import os
 from typing import Any
 
+from .dsse import build_envelope
 from .schema import PREDICATE_TYPE, STATEMENT_TYPE
 
 
@@ -154,6 +155,11 @@ def emit_statement(run_dir: str) -> dict[str, Any]:
             },
         },
     }
+
+
+def emit_envelope(run_dir: str) -> dict[str, Any]:
+    """Build an unsigned DSSE envelope around emit_statement(run_dir)."""
+    return build_envelope(emit_statement(run_dir))
 
 
 def write_statement(statement: dict[str, Any], path: str) -> None:

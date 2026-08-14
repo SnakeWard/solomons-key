@@ -12,6 +12,12 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
+from .dsse import (
+    extract_payload,
+    looks_like_dsse,
+    looks_like_statement,
+    validate_envelope,
+)
 from .schema import PREDICATE_TYPE, STATEMENT_TYPE, load_schema
 
 _VALIDATOR = Draft202012Validator(load_schema())
@@ -24,6 +30,29 @@ class ConsumeResult:
 
     def __bool__(self) -> bool:
         return self.ok
+
+
+def consume_document(document: Any) -> ConsumeResult:
+    """Accept a bare Statement or an unsigned DSSE envelope wrapping one."""
+    if not isinstance(document, dict):
+        return ConsumeResult(False, ["document must be a JSON object"])
+    dsse = looks_like_dsse(document)
+    statement = looks_like_statement(document)
+    if dsse and statement:
+        return ConsumeResult(
+            False,
+            ["ambiguous document: both Statement and DSSE envelope fields are present"],
+        )
+    if dsse:
+        envelope_errors = validate_envelope(document)
+        if envelope_errors:
+            return ConsumeResult(False, envelope_errors)
+        try:
+            payload = extract_payload(document)
+        except ValueError as exc:
+            return ConsumeResult(False, [str(exc)])
+        return consume_statement(payload)
+    return consume_statement(document)
 
 
 def consume_statement(document: Any) -> ConsumeResult:
@@ -67,4 +96,4 @@ def consume_path(path: str) -> ConsumeResult:
         document = json.loads(raw)
     except json.JSONDecodeError as exc:
         return ConsumeResult(False, [f"malformed JSON: {exc}"])
-    return consume_statement(document)
+    return consume_document(document)

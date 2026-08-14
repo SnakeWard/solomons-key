@@ -1,7 +1,7 @@
 """Thin CLI for the optional in-toto exporter and consumer.
 
-    python -m solomons_key.in_toto emit <run-dir> [-o FILE]
-    python -m solomons_key.in_toto consume <statement.json>
+    python -m solomons_key.in_toto emit <run-dir> [-o FILE] [--dsse]
+    python -m solomons_key.in_toto consume <statement-or-envelope.json>
 """
 
 from __future__ import annotations
@@ -11,12 +11,14 @@ import json
 import sys
 
 from .consume import consume_path
-from .export import emit_statement, write_statement
+from .export import emit_envelope, emit_statement, write_statement
 
 
 def cmd_emit(args: argparse.Namespace) -> int:
     try:
-        statement = emit_statement(args.run_dir)
+        document = (
+            emit_envelope(args.run_dir) if args.dsse else emit_statement(args.run_dir)
+        )
     except FileNotFoundError as exc:
         print(f"sk-intoto emit: {exc}", file=sys.stderr)
         return 3
@@ -24,10 +26,10 @@ def cmd_emit(args: argparse.Namespace) -> int:
         print(f"sk-intoto emit: unreadable run: {exc}", file=sys.stderr)
         return 3
     if args.out:
-        write_statement(statement, args.out)
+        write_statement(document, args.out)
         print(f"sk-intoto: wrote {args.out}")
     else:
-        json.dump(statement, sys.stdout, indent=2, sort_keys=True)
+        json.dump(document, sys.stdout, indent=2, sort_keys=True)
         sys.stdout.write("\n")
     return 0
 
@@ -58,6 +60,14 @@ def main(argv: list[str] | None = None) -> int:
     emit = sub.add_parser("emit", help="export a statement from an existing Key run")
     emit.add_argument("run_dir", help="path to a Key run directory (contains run.json)")
     emit.add_argument("-o", "--out", help="write JSON here instead of stdout")
+    emit.add_argument(
+        "--dsse",
+        action="store_true",
+        help=(
+            "wrap the Statement in an unsigned DSSE envelope "
+            "(application/vnd.in-toto+json); default is a bare Statement"
+        ),
+    )
     emit.set_defaults(fn=cmd_emit)
 
     consume = sub.add_parser("consume", help="structurally validate a statement")

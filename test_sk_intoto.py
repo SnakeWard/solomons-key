@@ -15,11 +15,15 @@ import sys
 import tempfile
 
 from solomons_key.in_toto import (
+    PAYLOAD_TYPE,
     PREDICATE_TYPE,
     STATEMENT_TYPE,
+    consume_document,
     consume_path,
     consume_statement,
+    emit_envelope,
     emit_statement,
+    extract_payload,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -173,6 +177,111 @@ def main() -> int:
             text=True,
         )
         check("cli_consume_bad_exit_1", proc.returncode == 1, proc.stdout)
+
+    envelope = emit_envelope(GOOD_RUN)
+    check(
+        "emit_default_is_bare_statement",
+        "payload" not in good and good.get("_type") == STATEMENT_TYPE,
+        list(good),
+    )
+    check(
+        "emit_dsse_has_envelope_fields",
+        envelope.get("payloadType") == PAYLOAD_TYPE
+        and isinstance(envelope.get("payload"), str)
+        and envelope.get("payload")
+        and isinstance(envelope.get("signatures"), list)
+        and len(envelope["signatures"]) >= 1,
+        {k: envelope.get(k) for k in ("payloadType", "signatures")},
+    )
+    extracted = extract_payload(envelope)
+    check(
+        "emit_dsse_payload_is_statement",
+        extracted == good,
+        "DSSE payload did not round-trip to emit_statement(runs/good)",
+    )
+    dsse_result = consume_document(envelope)
+    check(
+        "consume_accepts_emitted_dsse",
+        dsse_result.ok,
+        "; ".join(dsse_result.errors),
+    )
+    committed_dsse = os.path.join(FIXTURES, "dsse_from_runs_good.json")
+    check(
+        "committed_dsse_fixture_validates",
+        consume_path(committed_dsse).ok,
+        "; ".join(consume_path(committed_dsse).errors),
+    )
+    with open(committed_dsse, encoding="utf-8") as handle:
+        saved_dsse = json.load(handle)
+    check(
+        "committed_dsse_matches_live_emit",
+        saved_dsse == envelope,
+        "committed DSSE fixture drifted from emit_envelope(runs/good)",
+    )
+    wrong_pt = consume_path(os.path.join(FIXTURES, "dsse_wrong_payload_type.json"))
+    check(
+        "reject_dsse_wrong_payload_type",
+        not wrong_pt.ok and any("payloadType" in item for item in wrong_pt.errors),
+        wrong_pt.errors,
+    )
+    missing_pl = consume_path(os.path.join(FIXTURES, "dsse_missing_payload.json"))
+    check(
+        "reject_dsse_missing_payload",
+        not missing_pl.ok and any("missing payload" in item for item in missing_pl.errors),
+        missing_pl.errors,
+    )
+    empty_sigs = consume_path(os.path.join(FIXTURES, "dsse_empty_signatures.json"))
+    check(
+        "reject_dsse_empty_signatures",
+        not empty_sigs.ok
+        and any("empty signatures" in item for item in empty_sigs.errors),
+        empty_sigs.errors,
+    )
+    bad_env = consume_path(os.path.join(FIXTURES, "dsse_malformed.json"))
+    check(
+        "reject_dsse_malformed_envelope",
+        not bad_env.ok and any("base64" in item for item in bad_env.errors),
+        bad_env.errors,
+    )
+
+    with tempfile.TemporaryDirectory(prefix="sk-intoto-dsse-") as temp:
+        out = os.path.join(temp, "envelope.json")
+        proc = subprocess.run(
+            [PY, "-m", "solomons_key.in_toto", "emit", GOOD_RUN, "--dsse", "-o", out],
+            cwd=HERE,
+            capture_output=True,
+            text=True,
+        )
+        check(
+            "cli_emit_dsse_exit_0",
+            proc.returncode == 0 and os.path.isfile(out),
+            proc.stderr,
+        )
+        if os.path.isfile(out):
+            with open(out, encoding="utf-8") as handle:
+                cli_doc = json.load(handle)
+            check(
+                "cli_emit_dsse_is_envelope_not_statement",
+                cli_doc.get("payloadType") == PAYLOAD_TYPE and "_type" not in cli_doc,
+                list(cli_doc),
+            )
+        proc = subprocess.run(
+            [PY, "-m", "solomons_key.in_toto", "consume", committed_dsse],
+            cwd=HERE,
+            capture_output=True,
+            text=True,
+        )
+        check("cli_consume_dsse_exit_0", proc.returncode == 0, proc.stderr)
+        proc = subprocess.run(
+            [
+                PY, "-m", "solomons_key.in_toto", "consume",
+                os.path.join(FIXTURES, "dsse_empty_signatures.json"),
+            ],
+            cwd=HERE,
+            capture_output=True,
+            text=True,
+        )
+        check("cli_consume_dsse_bad_exit_1", proc.returncode == 1, proc.stdout)
 
     width = max((len(name) for _, name, _ in results), default=10)
     failed = 0

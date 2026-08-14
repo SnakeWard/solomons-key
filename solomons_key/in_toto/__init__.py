@@ -8,16 +8,22 @@ TRUSTED_PROGRAMS.sha256 and the existing emitters. See TRUST_BOUNDARY.md.
 
 from __future__ import annotations
 
-from .consume import ConsumeResult, consume_path, consume_statement
-from .export import emit_statement, write_statement
+from .consume import ConsumeResult, consume_document, consume_path, consume_statement
+from .dsse import PAYLOAD_TYPE, build_envelope, extract_payload
+from .export import emit_envelope, emit_statement, write_statement
 from .schema import PREDICATE_TYPE, STATEMENT_TYPE
 
 __all__ = [
     "ConsumeResult",
+    "PAYLOAD_TYPE",
     "PREDICATE_TYPE",
     "STATEMENT_TYPE",
+    "build_envelope",
+    "consume_document",
     "consume_path",
     "consume_statement",
+    "emit_envelope",
     "emit_statement",
+    "extract_payload",
     "write_statement",
 ]
