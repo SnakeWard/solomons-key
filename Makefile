@@ -31,6 +31,7 @@ test:
 	python3 test_sk_ledger.py
 	python3 test_sk_artifacts.py
 	python3 test_sk_verify.py
+	python3 test_sk_intoto.py
 
 test-emit:
 	python3 test_sk_emit.py

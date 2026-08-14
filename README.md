@@ -106,6 +106,22 @@ stages/      numbered progression — the readable story of the stack
 
 The verifier is implemented in Python, but the build being verified can use any language. Evidence formats such as JUnit and SARIF let the same contract model govern Python, JavaScript, Java, .NET, Go, Rust, and other toolchains.
 
+### Optional in-toto interchange
+
+A separate exporter can turn an **existing** Key run into a custom in-toto
+statement (`predicateType` `https://solomons-key.dev/attestation/v1`). The
+predicate carries computed-or-asserted, gate results, producer hashes, and a
+pointer at the Key run / ledger head. Consume structurally validates that
+shape and rejects malformed or incomplete input. It does **not** replace
+`sk_verify`, does **not** make Key an SLSA builder, and does **not** enlarge
+the trust root. `TRUSTED_PROGRAMS.sha256` and the existing emitters remain
+the root of trust. Claim size: `TRUST_BOUNDARY.md`.
+
+```bash
+python -m solomons_key.in_toto emit runs/good -o statement.json
+python -m solomons_key.in_toto consume statement.json
+```
+
 ---
 
 ## Operating model

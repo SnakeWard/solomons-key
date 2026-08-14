@@ -1,0 +1,26 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "run.json",
+      "digest": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ],
+  "predicate": {
+    "evidence_source": "program",
+    "computed_or_asserted": "computed",
+    "gates": [],
+    "producers": [],
+    "run": {
+      "run_id": "RUN_incomplete",
+      "result": "pass",
+      "key_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "ledger": {
+      "file": "",
+      "entry_hashes": []
+    }
+  }
+}

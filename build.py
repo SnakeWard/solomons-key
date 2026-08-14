@@ -882,6 +882,7 @@ TARGETS: dict[str, list] = {
         Step("test_sk_ledger", ["test_sk_ledger.py"]),
         Step("test_sk_artifacts", ["test_sk_artifacts.py"]),
         Step("test_sk_verify", ["test_sk_verify.py"]),
+        Step("test_sk_intoto", ["test_sk_intoto.py"]),
         Step("test_ci_flow", ["test_ci_flow.py"]),
     ],
     "test-emit": [Step("test_sk_emit", ["test_sk_emit.py"])],

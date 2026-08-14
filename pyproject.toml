@@ -45,12 +45,13 @@ py-modules = [
   "sk_handoff",
   "sk_resources",
 ]
-packages = ["solomons_key", "solomons_key._schemas"]
+packages = ["solomons_key", "solomons_key._schemas", "solomons_key.in_toto"]
 package-dir = { "solomons_key._schemas" = "schemas/artifacts" }
 include-package-data = true
 
 [tool.setuptools.package-data]
 "solomons_key._schemas" = ["*.schema.json"]
+"solomons_key.in_toto" = ["*.schema.json", "fixtures/*.json"]
 
 [tool.setuptools.dynamic]
 version = { file = ["VERSION"] }

@@ -1,0 +1,167 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "predicate": {
+    "computed_or_asserted": "mixed",
+    "evidence_source": "mixed",
+    "gates": [
+      {
+        "decision": "pass",
+        "enforcement_class": "automatic",
+        "evidence_source": "program",
+        "gate_id": "artifact_requirement_gate",
+        "produced_by_program": {
+          "name": "sk_emit.gate",
+          "sha256": "26e1e6dab9d15e2d72308a03b91f443f2c1d9af5aa592ee73cb08b09134d4da2"
+        }
+      },
+      {
+        "decision": "pass",
+        "enforcement_class": "automatic",
+        "evidence_source": "program",
+        "gate_id": "ledger_requirement_gate",
+        "produced_by_program": {
+          "name": "sk_emit.gate",
+          "sha256": "26e1e6dab9d15e2d72308a03b91f443f2c1d9af5aa592ee73cb08b09134d4da2"
+        }
+      },
+      {
+        "decision": "pass",
+        "enforcement_class": "automatic",
+        "evidence_source": "program",
+        "gate_id": "task_frame_gate",
+        "produced_by_program": {
+          "name": "sk_emit.gate",
+          "sha256": "26e1e6dab9d15e2d72308a03b91f443f2c1d9af5aa592ee73cb08b09134d4da2"
+        }
+      }
+    ],
+    "ledger": {
+      "entry_hashes": [
+        "68b880d6f1d10775761c573908a0df0a8787a483a828841c7bb3979aaa702959"
+      ],
+      "file": "ledger/solomons-key-builder-ledger.jsonl"
+    },
+    "producers": [
+      {
+        "name": "sk_emit.boundary",
+        "sha256": "d98f53da1d638e9680f15b32b1ba4674c57a17d40ff405e239b3b4f8f36cb7e1"
+      },
+      {
+        "name": "sk_emit.gate",
+        "sha256": "26e1e6dab9d15e2d72308a03b91f443f2c1d9af5aa592ee73cb08b09134d4da2"
+      },
+      {
+        "name": "sk_emit.inventory",
+        "sha256": "e5a554d2c5e60c38f82f7e7954d70144e9d1b9546c3cf742a0cde3784f26f3f7"
+      },
+      {
+        "name": "sk_emit.route",
+        "sha256": "3974760c2cdc280c2e0174cbb49c7738ed3651eaf4e13529383b983c3b67fea5"
+      },
+      {
+        "name": "sk_emit.taskframe",
+        "sha256": "d775cb49005371fcbadc6ea5d480f007edf42aa1c4e60f98271486e569d8e1dc"
+      },
+      {
+        "name": "sk_emit.telemetry",
+        "sha256": "57135ccf62d3b582c3a7e571c48fc79aa0d86b27e8e62c8d34f778863e0b3667"
+      },
+      {
+        "name": "sk_emit.validate",
+        "sha256": "23c5ce9b2ac116369914b4c9c030563c6075b7971b55164eac2fb96d5d81ed05"
+      },
+      {
+        "name": "sk_ledger.append",
+        "sha256": "5d3c1edfa9201d2f47d17fa66486b5d74abd8ae910751fccd6d0fbff636d911c"
+      }
+    ],
+    "run": {
+      "fixture": true,
+      "key_sha256": "3edaf3aaa16c8e44ad47ba1d7ac613161f590adcde6e97e7ca23c67626f70024",
+      "result": "pass",
+      "route_id": "protocol_build_route",
+      "run_id": "RUN_build_0001"
+    }
+  },
+  "predicateType": "https://solomons-key.dev/attestation/v1",
+  "subject": [
+    {
+      "digest": {
+        "sha256": "32486dd7038ac60b3835cff8926ba6714a8051f180c310092c25dc25c6c44811"
+      },
+      "name": "run.json"
+    },
+    {
+      "digest": {
+        "sha256": "ce2662d39343fb69f26535a51e2771993a963e1d25430b43b7559ab72762d793"
+      },
+      "name": "artifacts/gate_artifact_requirement_gate.json"
+    },
+    {
+      "digest": {
+        "sha256": "6dfb3b5341153f3823aa41ff702ac811a9f09aaee1fcad5482a1473ad94a4868"
+      },
+      "name": "artifacts/gate_ledger_requirement_gate.json"
+    },
+    {
+      "digest": {
+        "sha256": "22bea8140a2170b50c73e9847ce22c5ac8d8a93502678118fd9dba5e86e97aae"
+      },
+      "name": "artifacts/gate_task_frame_gate.json"
+    },
+    {
+      "digest": {
+        "sha256": "efd428eacaf4c20dd7f4f70cbf326c62f9477d810a4be43c6bea464551d00ec4"
+      },
+      "name": "artifacts/ledger_entry.json"
+    },
+    {
+      "digest": {
+        "sha256": "86be0c123a4c7e2e03dc680546e42226ac1d095ea83a01b24ff080279e2785eb"
+      },
+      "name": "artifacts/lot_route.json"
+    },
+    {
+      "digest": {
+        "sha256": "dc9c646698dca6d1e20165c6f07fd9e2c93a4251e5d484c8ef9106fb974c49b3"
+      },
+      "name": "artifacts/role_output.json"
+    },
+    {
+      "digest": {
+        "sha256": "4b993969a6dffd55b1f54960c8a341df85686455acc04b0af28a3cf8115ae149"
+      },
+      "name": "artifacts/source_inventory.json"
+    },
+    {
+      "digest": {
+        "sha256": "52e7d74c21440c4686544aa1da3ef171dc77557493b7c2ac083e7d7cb2f267d5"
+      },
+      "name": "artifacts/source_lock.json"
+    },
+    {
+      "digest": {
+        "sha256": "ff6053f0b997bbb0d973efb5698f64c7d614a6526ce984b1278d50a1605fd569"
+      },
+      "name": "artifacts/task_frame.json"
+    },
+    {
+      "digest": {
+        "sha256": "3b6cb7836066eef1921df8319a8f5640db10eb681037dc72d7f7bf16daaad109"
+      },
+      "name": "artifacts/task_frame_validation.json"
+    },
+    {
+      "digest": {
+        "sha256": "24ccdeea1531d50a8e141b5aa17ae46344a11227cddd0c3b06e1b9f22a500206"
+      },
+      "name": "artifacts/telemetry.json"
+    },
+    {
+      "digest": {
+        "sha256": "7bd958c9a3bb34db6e7d3517daaafd3c8eefdb9af51dc616b9a784a29b881c1c"
+      },
+      "name": "artifacts/validation_report.json"
+    }
+  ]
+}

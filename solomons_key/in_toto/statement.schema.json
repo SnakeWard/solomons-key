@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solomons-key.dev/attestation/v1/statement.schema.json",
+  "title": "Solomon's Key in-toto statement v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["_type", "subject", "predicateType", "predicate"],
+  "properties": {
+    "_type": {
+      "const": "https://in-toto.io/Statement/v1"
+    },
+    "subject": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "digest"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "digest": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sha256"],
+            "properties": {
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          }
+        }
+      }
+    },
+    "predicateType": {
+      "const": "https://solomons-key.dev/attestation/v1"
+    },
+    "predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_source",
+        "computed_or_asserted",
+        "gates",
+        "producers",
+        "run",
+        "ledger"
+      ],
+      "properties": {
+        "evidence_source": {
+          "enum": ["program", "attestation", "mixed"]
+        },
+        "computed_or_asserted": {
+          "enum": ["computed", "asserted", "mixed"]
+        },
+        "gates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "gate_id",
+              "decision",
+              "enforcement_class",
+              "evidence_source"
+            ],
+            "properties": {
+              "gate_id": { "type": "string", "minLength": 1 },
+              "decision": { "type": "string", "minLength": 1 },
+              "enforcement_class": { "type": "string", "minLength": 1 },
+              "evidence_source": {
+                "enum": ["program", "attestation", "unknown"]
+              },
+              "produced_by_program": {
+                "oneOf": [
+                  { "type": "null" },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["name", "sha256"],
+                    "properties": {
+                      "name": { "type": "string", "minLength": 1 },
+                      "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "producers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "sha256"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          }
+        },
+        "run": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["run_id", "result", "key_sha256"],
+          "properties": {
+            "run_id": { "type": "string", "minLength": 1 },
+            "result": { "type": "string", "minLength": 1 },
+            "key_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "route_id": { "type": "string" },
+            "fixture": { "type": "boolean" }
+          }
+        },
+        "ledger": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entry_hashes"],
+          "properties": {
+            "file": { "type": "string" },
+            "entry_hashes": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

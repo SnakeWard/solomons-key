@@ -1,0 +1,27 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "run.json",
+      "digest": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ],
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "predicate": {
+    "evidence_source": "program",
+    "computed_or_asserted": "computed",
+    "gates": [],
+    "producers": [],
+    "run": {
+      "run_id": "RUN_wrong_type",
+      "result": "pass",
+      "key_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "ledger": {
+      "file": "",
+      "entry_hashes": []
+    }
+  }
+}
