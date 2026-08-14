@@ -52,6 +52,57 @@ RUN_MANIFEST_REQUIRED = [
     "selected_route_id", "actor", "result",
 ]
 
+# Enumerable rule registry. Same shape as sk_lint.RULES: id -> description.
+# add() first arguments are these keys. Predicates and severities stay inline.
+RULES: dict[str, str] = {
+    "RUN00": (
+        "Real run vs generated shape fixture. Fixtures must be impossible to "
+        "cite as evidence of a governed build."
+    ),
+    "RUN01": "run.json manifest completeness. A missing required field stops further judgment.",
+    "RUN02": "The KEY file being judged is the one the run records as governing it.",
+    "RUN03": "Selected route exists, is not reserved, and is eligible under the task frame.",
+    "RUN04": "Every artifact in the run validates structurally and semantically.",
+    "RUN05": "Every artifact the selected route requires is present.",
+    "RUN06": (
+        "Gate bypass. A required gate with no recorded decision is the bypass; "
+        "absence is the evidence."
+    ),
+    "RUN07": (
+        "No decisions for gates the route does not require. Began as WARN; raised "
+        "to ERROR when the fixture made the shape obvious — a decision outside "
+        "the authorized set is scope escalation, not extra diligence."
+    ),
+    "RUN08": "Gate evidence_refs resolve to artifacts present in this run.",
+    "RUN09": "Telemetry covers the events the route requires.",
+    "RUN10": "The ledger witnesses this run: chain intact, cited entries present.",
+    "RUN11": "A failing gate cannot produce a passing run, and must be answered.",
+    "RUN12": (
+        "Test bypass. Same shape as RUN06: declared validation with no report, "
+        "or unjustified skipped layers."
+    ),
+    "RUN13": "Artifact producers are roles the selected route selects.",
+    "RUN14": "Every artifact belongs to this run, not another.",
+    "RUN15": "No actor may claim final authority.",
+    "RUN16": (
+        "A gate is only as automatic as the weakest thing it rests on. "
+        "Automatic decisions and their evidence must be program-produced."
+    ),
+    "RUN17": (
+        "Producing programs are on the trusted-programs allowlist at the pinned "
+        "hash. Unrecognized hashes on a fixture run are WARN; the fixture flag "
+        "is the price of that downgrade."
+    ),
+    "RUN18": "A fixture ledger is not an audit ledger.",
+}
+
+# Rules that cannot be shown a violation by a loadable run directory.
+# Asserted by test_sk_verify_registry.py — if a corpus run starts tripping
+# one of these, the exemption is stale and the test fails.
+UNCOVERED_OK: dict[str, str] = {
+    "RUN01": "malformed run.json is a load failure, covered by the CLI's exit-3 path",
+}
+
 
 @dataclass
 class Violation:

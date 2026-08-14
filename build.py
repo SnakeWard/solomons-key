@@ -789,8 +789,8 @@ COUNTED_DOCS = ["README_sk-lint.md", "REPORT.md", "README.md"]
 def actual_counts() -> dict[str, int]:
     rc, out = run(["sk_lint.py", "--rules"], capture=True)
     lint = len([l for l in out.splitlines() if l.strip().startswith("SK")])
-    verify_src = open(os.path.join(HERE, "sk_verify.py"), encoding="utf-8").read()
-    runr = len(set(re.findall(r'add\("(RUN\d+)"', verify_src)))
+    import sk_verify as _sk_verify
+    runr = len(_sk_verify.RULES)
     art_src = open(os.path.join(HERE, "sk_artifacts.py"), encoding="utf-8").read()
     sem = len(set(re.findall(r'add\("(SEM\d+)"', art_src)))
 
