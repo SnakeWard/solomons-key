@@ -783,7 +783,7 @@ def release_check() -> int:
 
 COUNTS_BEGIN = "<!-- counts:begin -->"
 COUNTS_END = "<!-- counts:end -->"
-COUNTED_DOCS = ["README_sk-lint.md", "REPORT.md"]
+COUNTED_DOCS = ["README_sk-lint.md", "REPORT.md", "README.md"]
 
 
 def actual_counts() -> dict[str, int]:

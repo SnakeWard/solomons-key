@@ -1,5 +1,9 @@
 # Solomon's Key
 
+<!-- counts:begin -->
+**23** lint rules · **19** run rules · **13** semantic rules · **157** tests passing
+<!-- counts:end -->
+
 **A verifier for AI-assisted software builds.**
 
 Part of the Solomon's Forge lineage. **Forge** is the normative layer — doctrine, specs, handoff contracts: how an AI-assisted build is *supposed* to be governed. **Key** is the evidentiary layer: whether a given build actually *was*. Forge states the contract; Key decides whether you kept it.
