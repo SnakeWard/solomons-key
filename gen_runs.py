@@ -40,9 +40,19 @@ def sha256_file(path: str) -> str:
     return h.hexdigest()
 
 
+_REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+
 def manifest_path(path: str) -> str:
-    """Serialize paths canonically so fixtures are identical on every host."""
-    return path.replace("\\", "/")
+    """Serialize paths as repo-relative posix so argv drive/prefix cannot leak."""
+    abs_path = os.path.abspath(path)
+    try:
+        rel = os.path.relpath(abs_path, _REPO_ROOT)
+    except ValueError:
+        rel = os.path.basename(abs_path)
+    if rel.startswith(".."):
+        rel = os.path.basename(abs_path)
+    return rel.replace("\\", "/")
 
 
 ATTESTED_ARTIFACTS = {"role_output_artifact", "audit_report_artifact",

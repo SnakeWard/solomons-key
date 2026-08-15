@@ -132,6 +132,19 @@ class Violation:
     message: str
 
 
+def report_path(path: str) -> str:
+    """Repo-relative posix path, or basename if the path is outside the tree."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    abs_path = os.path.abspath(path)
+    try:
+        rel = os.path.relpath(abs_path, here)
+    except ValueError:
+        return os.path.basename(abs_path.rstrip("\\/")).replace("\\", "/")
+    if rel.startswith(".."):
+        return os.path.basename(abs_path.rstrip("\\/")).replace("\\", "/")
+    return rel.replace("\\", "/")
+
+
 def sha256_file(path: str) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as fh:
@@ -533,7 +546,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.json:
         print(json.dumps({
-            "run_dir": args.run_dir,
+            "run_dir": report_path(args.run_dir),
             "run_id": run.manifest.get("run_id"),
             "route": run.manifest.get("selected_route_id"),
             "artifacts": len(run.artifacts),
