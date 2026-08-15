@@ -39,6 +39,21 @@ def main() -> int:
         set(V.UNCOVERED_OK) <= set(V.RULES),
         f"orphan exemptions: {sorted(set(V.UNCOVERED_OK) - set(V.RULES))}",
     )
+    check(
+        "FIXTURE_WARN_ONLY_keys_are_in_RULES",
+        set(V.FIXTURE_WARN_ONLY) <= set(V.RULES),
+        f"orphan caveats: {sorted(set(V.FIXTURE_WARN_ONLY) - set(V.RULES))}",
+    )
+    check(
+        "caveat_and_exemption_do_not_overlap",
+        not (set(V.FIXTURE_WARN_ONLY) & set(V.UNCOVERED_OK)),
+        sorted(set(V.FIXTURE_WARN_ONLY) & set(V.UNCOVERED_OK)),
+    )
+    check(
+        "RUN00_17_18_are_the_declared_caveats",
+        set(V.FIXTURE_WARN_ONLY) == {"RUN00", "RUN17", "RUN18"},
+        sorted(V.FIXTURE_WARN_ONLY),
+    )
 
     key_doc = yaml.safe_load(open(KEY, encoding="utf-8"))
     registry, by_artifact = A.load_registry(SCHEMAS)
@@ -49,6 +64,7 @@ def main() -> int:
     )
 
     tripped: dict[str, list[str]] = {rid: [] for rid in V.RULES}
+    fixture_severities: dict[str, set[str]] = {rid: set() for rid in V.FIXTURE_WARN_ONLY}
     for name in sorted(os.listdir(RUNS)):
         run_dir = os.path.join(RUNS, name)
         if not os.path.isfile(os.path.join(run_dir, "run.json")):
@@ -58,9 +74,12 @@ def main() -> int:
         except (FileNotFoundError, json.JSONDecodeError):
             continue
         vs = V.verify_run(run, key_doc, KEY, registry, by_artifact, ledger, SCHEMAS)
+        is_fixture = run.manifest.get("fixture") is True
         for item in vs:
             if item.rule in tripped:
                 tripped[item.rule].append(name)
+            if is_fixture and item.rule in fixture_severities:
+                fixture_severities[item.rule].add(item.severity)
 
     for rid in sorted(V.RULES):
         bound = tripped[rid]
@@ -81,6 +100,24 @@ def main() -> int:
                 f"{rid}_bound_to_a_run",
                 bool(bound),
                 "no run trips this rule and it is not in UNCOVERED_OK",
+            )
+        if rid in V.FIXTURE_WARN_ONLY:
+            sevs = fixture_severities[rid]
+            check(
+                f"{rid}_caveat_has_reason",
+                bool(V.FIXTURE_WARN_ONLY[rid].strip()),
+                "caveat has no written reason",
+            )
+            check(
+                f"{rid}_still_trips_fixture_corpus",
+                bool(sevs),
+                "caveat stale; no fixture=true run trips this rule",
+            )
+            blocking = sevs - {V.WARN}
+            check(
+                f"{rid}_fixture_stays_warn",
+                not blocking,
+                f"caveat stale; fixture run fired {sorted(blocking)}",
             )
 
     undeclared = sorted(
@@ -105,6 +142,10 @@ def main() -> int:
     if V.UNCOVERED_OK:
         print("\n  declared coverage gaps:")
         for rid, why in sorted(V.UNCOVERED_OK.items()):
+            print(f"    {rid}  {why}")
+    if V.FIXTURE_WARN_ONLY:
+        print("\n  fixture WARN-only caveats:")
+        for rid, why in sorted(V.FIXTURE_WARN_ONLY.items()):
             print(f"    {rid}  {why}")
     return 1 if failed else 0
 

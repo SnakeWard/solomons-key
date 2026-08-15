@@ -103,6 +103,26 @@ UNCOVERED_OK: dict[str, str] = {
     "RUN01": "malformed run.json is a load failure, covered by the CLI's exit-3 path",
 }
 
+# Rules that fire on fixture runs at WARN by design. They are bound, not
+# uncovered — but they are not bypass rules. A fixture flag is a declaration.
+# If any of these fires CRITICAL or ERROR on a fixture=true run, the caveat
+# is stale. A dedicated non-fixture CRITICAL demonstration is a later fixture
+# pass, not this one.
+FIXTURE_WARN_ONLY: dict[str, str] = {
+    "RUN00": (
+        "fixture=true is a declaration that the run is not evidence; WARN so it "
+        "cannot be cited as a governed build. Not a bypass."
+    ),
+    "RUN17": (
+        "unrecognized program hashes on a fixture are WARN; the fixture flag is "
+        "the price of that downgrade. CRITICAL only on a non-fixture run."
+    ),
+    "RUN18": (
+        "a fixture ledger is not an audit ledger; WARN, not CRITICAL. The class "
+        "field is an attestation, not a measurement."
+    ),
+}
+
 
 @dataclass
 class Violation:
